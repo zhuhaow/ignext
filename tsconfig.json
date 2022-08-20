@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+      "target": "ESNext",
+      "module": "ESNext",  // output `import`/`export` ES modules
+      "moduleResolution": "Node",
+      "types": ["node"],
+    }
+}
