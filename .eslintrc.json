@@ -6,7 +6,7 @@
     "overrides": [
         {
             "extends": [
-                "xo-typescript"
+                "xo-typescript/space"
             ],
             "files": [
                 "*.ts",
