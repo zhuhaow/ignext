@@ -1,0 +1,13 @@
+{
+  "name": "ignext",
+  "version": "0.0.1",
+  "description": "Ignite Next.js app for Cloudflare",
+  "main": "index.js",
+  "keywords": [
+    "Cloudflare",
+    "Next.js"
+  ],
+  "author": "Zhuhao Wang (https://zhuhaow.me)",
+  "license": "MIT",
+  "homepage": "https://github.com/zhuhaow/ignext"
+}
