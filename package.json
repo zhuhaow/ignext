@@ -5,11 +5,12 @@
   "packageManager": "pnpm@7.9.3",
   "type": "module",
   "bin": {
-    "ignext": "dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "ignext": "dist/index.js"
   },
   "scripts": {
-    "build": "esbuild --bundle --outfile=dist/index.js src/index.ts"
+    "build": "esbuild --bundle --outfile=dist/index.js src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "keywords": [
     "Cloudflare",
@@ -20,7 +21,12 @@
   "homepage": "https://github.com/zhuhaow/ignext",
   "devDependencies": {
     "@types/node": "^18.7.8",
+    "@typescript-eslint/eslint-plugin": ">=5.28.0",
+    "@typescript-eslint/parser": ">=5.28.0",
     "esbuild": "^0.15.5",
-    "typescript": "^4.7.4"
+    "eslint": ">=8.0.0",
+    "eslint-config-xo": "^0.41.0",
+    "eslint-config-xo-typescript": "^0.52.0",
+    "typescript": ">=4.4"
   }
 }
