@@ -12,6 +12,9 @@
     "lint": "eslint .",
     "test": "jest"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "Cloudflare",
     "Next.js"
