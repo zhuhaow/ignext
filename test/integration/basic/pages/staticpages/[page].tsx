@@ -4,7 +4,7 @@ interface Props {
 	page: string;
 }
 
-export const getStaticProps: GetStaticProps<Props> = async context => {
+export const getStaticProps: GetStaticProps<Props> = async (context) => {
 	const page = context?.params?.page as string;
 
 	return {
@@ -15,7 +15,7 @@ export const getStaticProps: GetStaticProps<Props> = async context => {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => ({
-	paths: ['SSG'].map(page => ({params: {page}})),
+	paths: ['SSG'].map((page) => ({params: {page}})),
 	fallback: false,
 });
 

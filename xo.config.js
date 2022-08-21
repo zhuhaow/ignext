@@ -4,7 +4,6 @@ module.exports = {
 		'import/extensions': 'off',
 		'n/prefer-global/process': ['error', 'always'],
 	},
-	ignores: [
-		'test/**/next-env.d.ts',
-	],
+	ignores: ['test/**/next-env.d.ts'],
+	prettier: true,
 };

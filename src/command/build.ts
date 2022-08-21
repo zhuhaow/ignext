@@ -41,23 +41,37 @@ async function copyStaticBuiltPages(nextDir: PathLike, outputDir: PathLike) {
 				await copy(
 					file.path,
 					resolve(
-						outputDir, '_next/data',
+						outputDir,
+						'_next/data',
 						await buildId(nextDir),
-						relative(resolve(nextDir, '.next/server/pages'), dirname(file.path)),
+						relative(
+							resolve(nextDir, '.next/server/pages'),
+							dirname(file.path),
+						),
 						basename(file.path),
 					),
 				);
 			}
 
 			if (file.path.endsWith('.html')) {
-				await copy(file.path, resolve(outputDir, relative(resolve(nextDir, '.next/server/pages'), dirname(file.path)), basename(file.path)));
+				await copy(
+					file.path,
+					resolve(
+						outputDir,
+						relative(
+							resolve(nextDir, '.next/server/pages'),
+							dirname(file.path),
+						),
+						basename(file.path),
+					),
+				);
 			}
 		}
 	}
 }
 
 function resolve(...paths: PathLike[]): string {
-	return path.resolve(...paths.map(p => p.toString()));
+	return path.resolve(...paths.map((p) => p.toString()));
 }
 
 async function buildId(nextDir: PathLike) {
