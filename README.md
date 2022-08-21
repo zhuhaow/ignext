@@ -14,3 +14,4 @@ ignext tries to make Next.js websites compatible with Cloudflare Pages.
 - [ ] Basepath and locales
 - [ ] Headers, rewrites and redirects
 - [ ] Images
+- [ ] Fonts
