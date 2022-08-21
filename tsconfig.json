@@ -1,20 +1,24 @@
 {
-    "compilerOptions": {
-      "target": "ESNext",
-      "module": "ESNext",
-      "moduleResolution": "node",
-      "types": ["node", "jest"],
-      "strict": true,
-      "esModuleInterop": true,
-      "allowJs": true,
-      "noEmit": true
-    },
-    "include": [
-      "**/*.ts",
-      "**/*.tsx"
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "types": [
+      "node",
+      "jest"
     ],
-    "exclude": [
-      "node_modules",
-      "test/integration/**/pages/*",
-    ]
+    "strict": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "noEmit": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "test/integration/**/pages/*",
+  ]
 }
