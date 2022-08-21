@@ -1,9 +1,20 @@
 {
     "compilerOptions": {
       "target": "ESNext",
-      "module": "ESNext",  // output `import`/`export` ES modules
-      "moduleResolution": "Node",
-      "types": ["node"],
+      "module": "ESNext",
+      "moduleResolution": "node",
+      "types": ["node", "jest"],
       "strict": true,
-    }
+      "esModuleInterop": true,
+      "allowJs": true,
+      "noEmit": true
+    },
+    "include": [
+      "**/*.ts",
+      "**/*.tsx"
+    ],
+    "exclude": [
+      "node_modules",
+      "test/integration/**/pages/*",
+    ]
 }
