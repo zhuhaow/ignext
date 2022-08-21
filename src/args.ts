@@ -1,7 +1,7 @@
 import {Command} from 'commander';
 import {join} from 'path';
 import {version} from '../package.json';
-import {build} from './next/build';
+import {build} from './command/build';
 
 const program = new Command();
 
