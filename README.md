@@ -2,7 +2,7 @@
 
 Ignite your Next.js website for Cloudflare.
 
-ignext tries to make Next.js websites compatible with Cloudflare Pages. 
+ignext aims to run Next.js website on Cloudflare Pages. 
 
 ## Development progress
 
