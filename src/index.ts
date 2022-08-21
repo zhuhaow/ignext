@@ -4,4 +4,7 @@ async function main() {
   await program.parseAsync();
 }
 
-main().then(() => {}).catch(err => {});
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
