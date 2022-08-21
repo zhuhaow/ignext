@@ -19,6 +19,11 @@
         "sourceType": "module",
         "project": "./tsconfig.json"
     },
-    "rules": {
-    }
+    "rules": {},
+    "ignorePatterns": [
+        "**/node_modules/**",
+        "**/dist/**",
+        "test/integration/**/pages/*",
+        "test/integration/**/next-env.d.ts"
+    ]
 }
