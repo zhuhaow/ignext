@@ -4,6 +4,7 @@ specifiers:
   '@types/jest': ^28.1.7
   '@types/node': ^18.7.8
   '@types/react': ^17.0.2 || ^18.0.0-0
+  '@types/react-dom': ^17.0.2 || ^18.0.0-0
   '@typescript-eslint/eslint-plugin': '>=5.28.0'
   '@typescript-eslint/parser': '>=5.28.0'
   esbuild: ^0.15.5
@@ -22,6 +23,7 @@ specifiers:
 
 dependencies:
   '@types/react': 18.0.17
+  '@types/react-dom': 18.0.6
   next: 12.2.5_twoewwu6sg7cdf3ao6njtbftne
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
@@ -1105,6 +1107,12 @@ packages:
 
   /@types/prop-types/15.7.5:
     resolution: {integrity: sha512-JCB8C6SnDoQf0cNycqd/35A7MjcnK+ZTqE7judS6o7utxUCg6imJg3QK2qzHKszlTjcj2cn+NwMB2i96ubpj7w==}
+    dev: false
+
+  /@types/react-dom/18.0.6:
+    resolution: {integrity: sha512-/5OFZgfIPSwy+YuIBP/FgJnQnsxhZhjjrnxudMddeblOouIodEQ75X14Rr4wGSG/bknL+Omy9iWlLo1u/9GzAA==}
+    dependencies:
+      '@types/react': 18.0.17
     dev: false
 
   /@types/react/18.0.17:
