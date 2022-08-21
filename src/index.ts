@@ -1,10 +1,12 @@
+#!/usr/bin/env node
+
 import {program} from './args';
 
 async function main() {
-  await program.parseAsync();
+	await program.parseAsync();
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
+main().catch(error => {
+	console.error(error);
+	process.exit(1);
 });
