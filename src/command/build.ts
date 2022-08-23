@@ -129,8 +129,6 @@ async function getEdgeScriptList(nextDir: PathLike): Promise<string[]> {
 
 	result.push(webpackRuntimePath);
 
-	console.log(result);
-
 	return result;
 }
 
