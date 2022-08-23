@@ -26,3 +26,7 @@ const Page = ({page}: Props) => (
 );
 
 export default Page;
+
+export const config = {
+	runtime: 'experimental-edge',
+};
