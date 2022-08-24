@@ -15,3 +15,4 @@ ignext aims to run Next.js website on Cloudflare Pages.
 - [ ] Headers, rewrites and redirects
 - [ ] Images
 - [ ] Fonts
+- [ ] Wasm
