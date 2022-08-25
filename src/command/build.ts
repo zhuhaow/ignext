@@ -11,6 +11,8 @@ import {
 	writeFile,
 } from 'fs-extra';
 import klaw from 'klaw';
+import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plugin';
+import {concat, uniq} from 'lodash';
 
 export async function build(nextDir: PathLike, outputDir: PathLike) {
 	nextDir = normalize(resolve(nextDir.toString()));
@@ -89,10 +91,6 @@ async function buildId(nextDir: PathLike) {
 	return readFile(resolve(nextDir, '.next/BUILD_ID'), 'utf8');
 }
 
-interface NftResult {
-	files: string[];
-}
-
 async function getEdgeScriptList(nextDir: PathLike): Promise<string[]> {
 	const webpackRuntimePath = resolve(
 		nextDir,
@@ -105,31 +103,26 @@ async function getEdgeScriptList(nextDir: PathLike): Promise<string[]> {
 	}
 
 	const result: string[] = [];
-	// Don't why these files are put under page instead of server/page, seems like an error.
-	for await (const file of klaw(resolve(nextDir, '.next/pages'))) {
-		if (file.path.endsWith('.nft.json')) {
-			const nft = (await readJson(file.path)) as NftResult;
-			if (
-				nft.files.findIndex(
-					(f) => resolve(dirname(file.path), f) === webpackRuntimePath,
-				) !== -1
-			) {
-				result.push(
-					...nft.files
-						.filter(
-							(f) =>
-								f.endsWith('.js') &&
-								resolve(dirname(file.path), f) !== webpackRuntimePath,
-						)
-						.map((f) => resolve(dirname(file.path), f)),
-				);
-			}
-		}
+	const middlewareManifest = (await readJson(
+		resolve(nextDir, '.next/server/middleware-manifest.json'),
+	)) as MiddlewareManifest;
+
+	// Since there is no more nested middleware, there should be only
+	// one entry here.
+	for (const entry of concat(
+		Object.values(middlewareManifest.middleware),
+		Object.values(middlewareManifest.functions),
+	)) {
+		result.push(
+			...entry.files
+				.map((file) => resolve(nextDir, '.next', file))
+				.filter((file) => file !== webpackRuntimePath),
+		);
 	}
 
 	result.push(webpackRuntimePath);
 
-	return result;
+	return uniq(result);
 }
 
 async function buildHandler(nextDir: PathLike, outputDir: PathLike) {
