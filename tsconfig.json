@@ -5,7 +5,8 @@
     "moduleResolution": "node",
     "types": [
       "node",
-      "jest"
+      "jest",
+      "@cloudflare/workers-types"
     ],
     "strict": true,
     "esModuleInterop": true,
