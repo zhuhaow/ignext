@@ -13,6 +13,12 @@ import {
 import klaw from 'klaw';
 import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plugin';
 import {concat, uniq} from 'lodash';
+import {
+	ROUTES_MANIFEST,
+	SERVER_FILES_MANIFEST,
+	BUILD_ID_FILE,
+	MIDDLEWARE_MANIFEST,
+} from 'next/constants';
 
 export async function build(nextDir: PathLike, outputDir: PathLike) {
 	nextDir = normalize(resolve(nextDir.toString()));
@@ -88,13 +94,15 @@ function resolve(...paths: PathLike[]): string {
 }
 
 async function buildId(nextDir: PathLike) {
-	return readFile(resolve(nextDir, '.next/BUILD_ID'), 'utf8');
+	return readFile(resolve(nextDir, '.next', BUILD_ID_FILE), 'utf8');
 }
 
 async function getEdgeScriptList(nextDir: PathLike): Promise<string[]> {
 	const webpackRuntimePath = resolve(
 		nextDir,
-		'.next/server/edge-runtime-webpack.js',
+		'.next',
+		'server',
+		'edge-runtime-webpack.js',
 	);
 
 	if (!(await pathExists(webpackRuntimePath))) {
@@ -104,7 +112,7 @@ async function getEdgeScriptList(nextDir: PathLike): Promise<string[]> {
 
 	const result: string[] = [];
 	const middlewareManifest = (await readJson(
-		resolve(nextDir, '.next/server/middleware-manifest.json'),
+		resolve(nextDir, '.next/server', MIDDLEWARE_MANIFEST),
 	)) as MiddlewareManifest;
 
 	// Since there is no more nested middleware, there should be only
@@ -132,8 +140,28 @@ async function buildHandler(nextDir: PathLike, outputDir: PathLike) {
 
 	await writeFile(
 		resolve(outputDir, 'functions', '[[path]].js'),
-		scriptList
+		`
+		${scriptList
 			.map((s) => `require("${relative(resolve(outputDir, 'functions'), s)}");`)
-			.join('\n'),
+			.join('\n')}
+
+		const _routesManifest = require("${relative(
+			resolve(outputDir, 'functions'),
+			resolve(nextDir, '.next', ROUTES_MANIFEST),
+		)}");
+
+		global.routesManifest = _routesManifest;
+
+		const {config: _nextConfig} = require("${relative(
+			resolve(outputDir, 'functions'),
+			resolve(nextDir, '.next', SERVER_FILES_MANIFEST),
+		)}");
+
+		global.nextConfig = _nextConfig;
+
+		const {onRequest} = require("ignext/dist/server");
+
+		export {onRequest};
+		`,
 	);
 }

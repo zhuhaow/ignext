@@ -16,7 +16,7 @@ export const getStaticProps: GetStaticProps<Props> = async (context) => {
 
 export const getStaticPaths: GetStaticPaths = async () => ({
 	paths: ['SSG'].map((page) => ({params: {page}})),
-	fallback: false,
+	fallback: true,
 });
 
 const Page = ({page}: Props) => (
