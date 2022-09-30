@@ -12,7 +12,7 @@ specifiers:
   '@types/react-dom': ^17.0.2 || ^18.0.0-0
   '@types/wait-on': ^5.3.1
   add: 2.0.6
-  commander: 9.4.0
+  commander: 9.4.1
   esbuild: 0.15.5
   execa: 6.1.0
   fs-extra: 10.1.0
@@ -48,7 +48,7 @@ devDependencies:
   '@types/node': 18.7.8
   '@types/wait-on': 5.3.1
   add: 2.0.6
-  commander: 9.4.0
+  commander: 9.4.1
   esbuild: 0.15.5
   execa: 6.1.0
   fs-extra: 10.1.0
@@ -1934,8 +1934,8 @@ packages:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
     dev: true
 
-  /commander/9.4.0:
-    resolution: {integrity: sha512-sRPT+umqkz90UA8M1yqYfnHlZA7fF6nSphDtxeywPZ49ysjxDQybzk13CL+mXekDRG92skbcqCLVovuCusNmFw==}
+  /commander/9.4.1:
+    resolution: {integrity: sha512-5EEkTNyHNGFPD2H+c/dXXfQZYa/scCKasxWcXJaWnNJ99pnQN9Vnmqow+p+PlFPE63Q6mThaZws1T+HxfpgtPw==}
     engines: {node: ^12.20.0 || >=14}
     dev: true
 
