@@ -2,10 +2,7 @@
 import path from 'path';
 import {stringify} from 'node:querystring';
 import type {NextConfig} from 'next';
-import {
-	COMPILER_NAMES,
-	EDGE_RUNTIME_WEBPACK,
-} from 'next/dist/shared/lib/constants';
+import {COMPILER_NAMES} from 'next/dist/shared/lib/constants';
 import type {Compiler, Configuration} from 'webpack';
 import {Options} from './loaders/ignext-server-loader';
 
@@ -34,6 +31,23 @@ function updateEdgeWebpackConfig(config: Configuration) {
 		__dirname,
 		'loaders/ignext-server-loader',
 	);
+
+	config.optimization = {
+		...config.optimization,
+		splitChunks: false,
+	};
+
+	config.output = {
+		...config.output,
+		enabledLibraryTypes: [
+			...(config.output?.enabledLibraryTypes ?? []),
+			'module',
+		],
+	};
+	config.experiments = {
+		...config.experiments,
+		outputModule: true,
+	};
 }
 
 class IgnextPlugin {
@@ -81,11 +95,10 @@ class IgnextPlugin {
 			entry['ignext/server'] = {
 				import: [`ignext-server-loader?${stringify({...serverQuery})}!`],
 				library: {
-					name: ['_ENTRIES', 'ignext_server'],
-					type: 'assign',
+					type: 'module',
 				},
 				asyncChunks: false,
-				runtime: EDGE_RUNTIME_WEBPACK,
+				chunkLoading: false,
 			};
 
 			return undefined as unknown as boolean;
