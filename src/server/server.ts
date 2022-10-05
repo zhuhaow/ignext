@@ -1,13 +1,15 @@
-import {IncomingMessage, ServerResponse} from 'node:http';
+import type {AppType, DocumentType} from 'next/dist/shared/lib/utils';
+import type {ReactLoadableManifest} from 'next/dist/server/load-components';
+import type {BuildManifest} from 'next/dist/server/get-page-files';
+import type {NextConfig} from 'next/dist/server/config-shared';
+import type {SERVER_RUNTIME} from 'next/dist/lib/constants';
+import type {FontLoaderManifest} from 'next/dist/build/webpack/plugins/font-loader-manifest-plugin';
+
+// TODO: These can be imported conditionally based on whether there is
+// page or app used.
+import {renderToHTMLOrFlight} from 'next/dist/server/app-render';
+import {renderToHTML} from 'next/dist/server/render';
 import WebServer from 'next/dist/server/web-server';
-import {AppType, DocumentType} from 'next/dist/shared/lib/utils';
-import {ReactLoadableManifest} from 'next/dist/server/load-components';
-import {BuildManifest} from 'next/dist/server/get-page-files';
-import {NextConfig} from 'next/dist/server/config-shared';
-import {SERVER_RUNTIME} from 'next/dist/lib/constants';
-import {FontLoaderManifest} from 'next/dist/build/webpack/plugins/font-loader-manifest-plugin';
-import {RenderOpts} from 'next/dist/server/app-render';
-import {NextParsedUrlQuery} from 'next/dist/server/request-meta';
 import {WebNextRequest, WebNextResponse} from 'next/dist/server/base-http/web';
 
 type Options = ConstructorParameters<typeof WebServer>[0];
@@ -33,8 +35,6 @@ class IgnextServer extends WebServer {
 
 interface PageRenderOptions {
 	isAppPath: boolean;
-	appRenderToHTML: typeof import('next/dist/server/app-render').renderToHTMLOrFlight;
-	pagesRenderToHTML: typeof import('next/dist/server/render').renderToHTML;
 	pageMod: any;
 	appMod: any;
 }
@@ -47,7 +47,6 @@ interface IgnextHandlerOptions {
 	subresourceIntegrityManifest?: Record<string, string>;
 	fontLoaderManifest: FontLoaderManifest;
 	Document: DocumentType;
-
 	buildId: string;
 	pagesOptions: Partial<Record<string, PageRenderOptions>>;
 	serverComponentManifest: any;
@@ -82,18 +81,22 @@ export function createIgnextHandler(options: IgnextHandlerOptions) {
 			//
 			// eslint-disable-next-line max-params, @typescript-eslint/naming-convention
 			async appRenderToHTML(
-				request: IncomingMessage,
-				response: ServerResponse,
-				pathname: string,
-				query: NextParsedUrlQuery,
-				renderOptions: RenderOpts,
-				_isPagesDir: any,
+				request,
+				response,
+				pathname,
+				query,
+				renderOptions,
+				_isPagesDir,
 				_isStaticGeneration?: any,
 			) {
 				const pageOptions = options.pagesOptions[pathname];
 
-				if (pageOptions?.appRenderToHTML) {
-					return pageOptions.appRenderToHTML(
+				if (!pageOptions) {
+					throw new Error(`Cannot find render for ${pathname}`);
+				}
+
+				if (pageOptions.isAppPath) {
+					return renderToHTMLOrFlight(
 						request,
 						response,
 						pathname,
@@ -103,18 +106,14 @@ export function createIgnextHandler(options: IgnextHandlerOptions) {
 					);
 				}
 
-				if (pageOptions?.pagesRenderToHTML) {
-					return pageOptions.pagesRenderToHTML(
-						request,
-						response,
-						pathname,
-						query,
-						// The caller will call it with correct parameter
-						renderOptions as any,
-					);
-				}
-
-				throw new Error(`Cannot find render for ${pathname}`);
+				return renderToHTML(
+					request,
+					response,
+					pathname,
+					query,
+					// The caller will call it with correct parameter
+					renderOptions as any,
+				);
 			},
 			async loadComponent(pathname) {
 				const pageOptions = options.pagesOptions[pathname];
