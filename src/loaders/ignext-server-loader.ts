@@ -1,6 +1,7 @@
 /* eslint-disable unicorn/prefer-node-protocol */
 import {parse} from 'querystring';
 import {Buffer} from 'buffer';
+import path from 'path';
 import type {LoaderContext} from 'webpack';
 import type {EdgeSSRLoaderQuery} from 'next/dist/build/webpack/loaders/next-edge-ssr-loader';
 import type {EdgeFunctionLoaderOptions} from 'next/dist/build/webpack/loaders/next-edge-function-loader';
@@ -29,7 +30,16 @@ export default function ignextServerLoader(this: LoaderContext<Options>) {
 		middlewareQuery: middlewareQuery ? parse(middlewareQuery) : undefined,
 	};
 
-	return `export ${buildHandlerOptions.call(this, options as any)}`;
+	return `
+	import {createIgnextHandler} from "${path.resolve(
+		__dirname,
+		'../internal/server',
+	)}"
+	
+	const handlerOptions = ${buildHandlerOptions.call(this, options as any)};
+
+	export default createIgnextHandler(handlerOptions);
+	`;
 }
 
 function swapDistFolderWithEsmDistFolder(path: string) {
@@ -97,7 +107,7 @@ function buildHandlerOptions(
 	}
 
 	return `
-		const handlerOptions = {
+		{
 			dev: ${JSON.stringify(dev)},
 			config: ${stringifiedConfig},
 			buildManifest: self.__BUILD_MANIFEST,
