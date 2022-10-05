@@ -16,7 +16,7 @@ export interface Options {
 
 interface ParsedOptions {
 	pageQueries: EdgeSSRLoaderQuery[];
-	functionQuries: EdgeFunctionLoaderOptions[];
+	functionQueries: EdgeFunctionLoaderOptions[];
 	middlewareQueries: MiddlewareLoaderOptions;
 }
 
