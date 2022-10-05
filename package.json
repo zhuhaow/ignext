@@ -30,12 +30,16 @@
     "@types/fs-extra": "9.0.13",
     "@types/isomorphic-fetch": "^0.0.36",
     "@types/jest": "28.1.7",
+    "@types/lodash-es": "^4.17.6",
     "@types/node": "18.7.8",
     "@types/wait-on": "^5.3.1",
+    "esbuild": "^0.15.10",
+    "execa": "^6.1.0",
     "fs-extra": "10.1.0",
     "get-port": "^6.1.2",
     "isomorphic-fetch": "^3.0.0",
     "jest": "28.1.3",
+    "lodash-es": "^4.17.21",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.2",
     "ts-jest": "28.0.8",
@@ -43,9 +47,7 @@
     "typescript": "4.7.4",
     "wait-on": "^6.0.1",
     "wrangler": "2.0.27",
-    "xo": "0.51.0",
-    "esbuild": "^0.15.10",
-    "execa": "^6.1.0"
+    "xo": "0.51.0"
   },
   "peerDependencies": {
     "@types/react": "^17.0.2 || ^18.0.0-0",

@@ -1,81 +1,127 @@
 /* eslint-disable unicorn/prefer-node-protocol */
-import {parse, stringify} from 'querystring';
+import {parse} from 'querystring';
 import {Buffer} from 'buffer';
 import type {LoaderContext} from 'webpack';
 import type {EdgeSSRLoaderQuery} from 'next/dist/build/webpack/loaders/next-edge-ssr-loader';
 import type {EdgeFunctionLoaderOptions} from 'next/dist/build/webpack/loaders/next-edge-function-loader';
 import type {MiddlewareLoaderOptions} from 'next/dist/build/webpack/loaders/next-middleware-loader';
-import {getModuleBuildInfo} from 'next/dist/build/webpack/loaders/get-module-build-info';
 import {stringifyRequest} from 'next/dist/build/webpack/stringify-request';
+import toArray from 'lodash-es/toArray';
 
 export interface Options {
-	pageQueries: string[];
-	functionQueries: string[];
+	pageQueries?: string[];
+	functionQueries?: string[];
 	middlewareQuery?: string;
 }
 
 interface ParsedOptions {
 	pageQueries: EdgeSSRLoaderQuery[];
 	functionQueries: EdgeFunctionLoaderOptions[];
-	middlewareQueries: MiddlewareLoaderOptions;
+	middlewareQuery?: MiddlewareLoaderOptions;
 }
 
 export default function ignextServerLoader(this: LoaderContext<Options>) {
 	const {pageQueries, functionQueries, middlewareQuery} = this.getOptions();
 
 	const options = {
-		pageQueries: pageQueries.map((q) => parse(q)),
-		functionQueries: functionQueries.map((q) => parse(q)),
+		pageQueries: toArray(pageQueries).map((q) => parse(q)),
+		functionQueries: toArray(functionQueries).map((q) => parse(q)),
 		middlewareQuery: middlewareQuery ? parse(middlewareQuery) : undefined,
 	};
 
-	return `export default function() {console.log("${stringify(options)}");}`;
+	return `export ${buildHandlerOptions.call(this, options as any)}`;
 }
 
 function swapDistFolderWithEsmDistFolder(path: string) {
 	return path.replace('next/dist/pages', 'next/dist/esm/pages');
 }
 
-function loadSSRPage(this: LoaderContext<Options>, query: EdgeSSRLoaderQuery) {
+function buildHandlerOptions(
+	this: LoaderContext<Options>,
+	loaderOptions: ParsedOptions,
+) {
+	if (loaderOptions.pageQueries.length === 0) {
+		throw new Error('No page found');
+	}
+
+	// All these configs are the same for all
+	// entrypoints
 	const {
 		dev,
-		page,
-		buildId,
-		absolutePagePath,
-		absoluteAppPath,
-		absoluteDocumentPath,
-		absolute500Path,
-		absoluteErrorPath,
-		isServerComponent,
 		stringifiedConfig,
-		appDirLoader: appDirLoaderBase64,
-		pagesType,
 		sriEnabled,
 		hasFontLoaders,
-	} = query;
+		absoluteDocumentPath,
+		absoluteAppPath,
+		absolute500Path,
+		absoluteErrorPath,
+		buildId,
+	} = loaderOptions.pageQueries[0];
 
-	const appDirLoader = Buffer.from(
-		appDirLoaderBase64 ?? '',
-		'base64',
-	).toString();
-	const isAppDir = pagesType === 'app';
+	const hasServerComponent = loaderOptions.pageQueries.some(
+		(q) => q.pagesType === 'app',
+	);
 
-	const stringifiedPagePath = stringifyRequest(this, absolutePagePath);
-	const stringifiedAppPath = stringifyRequest(
-		this,
-		swapDistFolderWithEsmDistFolder(absoluteAppPath),
-	);
-	const stringifiedErrorPath = stringifyRequest(
-		this,
-		swapDistFolderWithEsmDistFolder(absoluteErrorPath),
-	);
-	const stringifiedDocumentPath = stringifyRequest(
-		this,
-		swapDistFolderWithEsmDistFolder(absoluteDocumentPath),
-	);
-	const stringified500Path = absolute500Path
-		? stringifyRequest(this, absolute500Path)
-		: null;
+	const stringifyPath = (path?: string) => {
+		return path
+			? stringifyRequest(this, swapDistFolderWithEsmDistFolder(absoluteAppPath))
+			: undefined;
+	};
 
-	const pageModPath = `${appDirLoader}${stringifiedPagePath.slice(1, -1)}`;
+	const stringifiedAppPath = stringifyPath(absoluteAppPath);
+	const stringifiedErrorPath = stringifyPath(absoluteErrorPath);
+	const stringifiedDocumentPath = stringifyPath(absoluteDocumentPath);
+	const stringified500Path = stringifyPath(absolute500Path);
+
+	const pageConfigs: Record<string, string> = {};
+
+	if (stringifiedErrorPath) {
+		pageConfigs['/_error'] = `${stringifiedErrorPath}`;
+	}
+
+	if (stringified500Path) {
+		pageConfigs['/500'] = `${stringified500Path}`;
+	}
+
+	for (const [key, value] of Object.entries(loaderOptions.pageQueries)) {
+		const appDirLoaderString = Buffer.from(
+			value.appDirLoader ?? '',
+			'base64',
+		).toString();
+		const stringifiedPagePath = stringifyPath(value.absolutePagePath)!;
+		const pageModPath = `${appDirLoaderString}${stringifiedPagePath.slice(
+			1,
+			-1,
+		)}`;
+		pageConfigs[key] = `require(${JSON.stringify(pageModPath)})`;
+	}
+
+	return `
+		const handlerOptions = {
+			dev: ${JSON.stringify(dev)},
+			config: ${stringifiedConfig},
+			buildManifest: self.__BUILD_MANIFEST,
+			reactLoadableManifest: self.__REACT_LOADABLE_MANIFEST,
+			subresourceIntegrityManifest: ${
+				sriEnabled ? 'self.__SUBRESOURCE_INTEGRITY_MANIFEST' : 'undefined'
+			},
+			fontLoaderManifest: ${
+				hasFontLoaders ? 'self.__FONT_LOADER_MANIFEST' : 'undefined'
+			},
+			Document: ${
+				stringifiedDocumentPath
+					? `require(${stringifiedDocumentPath}).default`
+					: 'undefined'
+			},
+			appMod: ${stringifiedAppPath ? `require(${stringifiedAppPath})` : 'undefined'},
+			buildId: ${JSON.stringify(buildId)},
+			pagesOptions: ${JSON.stringify(pageConfigs)},
+			serverComponentManifest: ${
+				hasServerComponent ? 'self.__RSC_MANIFEST' : 'undefined'
+			},
+			serverCSSManifest: ${
+				hasServerComponent ? 'self.__RSC_CSS_MANIFEST' : 'undefined'
+			}
+		}
+	`;
 }

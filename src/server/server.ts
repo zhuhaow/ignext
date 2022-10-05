@@ -2,7 +2,6 @@ import type {AppType, DocumentType} from 'next/dist/shared/lib/utils';
 import type {ReactLoadableManifest} from 'next/dist/server/load-components';
 import type {BuildManifest} from 'next/dist/server/get-page-files';
 import type {NextConfig} from 'next/dist/server/config-shared';
-import type {SERVER_RUNTIME} from 'next/dist/lib/constants';
 import type {FontLoaderManifest} from 'next/dist/build/webpack/plugins/font-loader-manifest-plugin';
 
 // TODO: These can be imported conditionally based on whether there is
@@ -11,6 +10,7 @@ import {renderToHTMLOrFlight} from 'next/dist/server/app-render';
 import {renderToHTML} from 'next/dist/server/render';
 import WebServer from 'next/dist/server/web-server';
 import {WebNextRequest, WebNextResponse} from 'next/dist/server/base-http/web';
+import {SERVER_RUNTIME} from 'next/dist/lib/constants';
 
 type Options = ConstructorParameters<typeof WebServer>[0];
 
@@ -34,9 +34,8 @@ class IgnextServer extends WebServer {
 }
 
 interface PageRenderOptions {
-	isAppPath: boolean;
 	pageMod: any;
-	appMod: any;
+	isAppPath: boolean;
 }
 
 interface IgnextHandlerOptions {
@@ -45,8 +44,9 @@ interface IgnextHandlerOptions {
 	buildManifest: BuildManifest;
 	reactLoadableManifest: ReactLoadableManifest;
 	subresourceIntegrityManifest?: Record<string, string>;
-	fontLoaderManifest: FontLoaderManifest;
-	Document: DocumentType;
+	fontLoaderManifest?: FontLoaderManifest;
+	Document?: DocumentType;
+	appMod: any;
 	buildId: string;
 	pagesOptions: Partial<Record<string, PageRenderOptions>>;
 	serverComponentManifest: any;
@@ -117,20 +117,22 @@ export function createIgnextHandler(options: IgnextHandlerOptions) {
 			},
 			async loadComponent(pathname) {
 				const pageOptions = options.pagesOptions[pathname];
-				if (!pageOptions || pageOptions.isAppPath) {
-					return null;
+
+				if (!pageOptions) {
+					throw new Error(`Cannot find render settings for ${pathname}`);
 				}
 
+				// Some fields should be optional but marked as required in Next.js.
 				return {
 					dev: options.dev,
 					buildManifest: options.buildManifest,
 					reactLoadableManifest: options.reactLoadableManifest,
 					subresourceIntegrityManifest: options.subresourceIntegrityManifest,
 					fontLoaderManifest: options.fontLoaderManifest,
+					// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-assignment
+					Document: options.Document as any,
 					// eslint-disable-next-line @typescript-eslint/naming-convention
-					Document: options.Document,
-					// eslint-disable-next-line @typescript-eslint/naming-convention
-					App: pageOptions.appMod?.default as AppType,
+					App: options.appMod?.default as AppType,
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/naming-convention
 					Component: pageOptions.pageMod.default,
 					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

@@ -55,12 +55,12 @@ class IgnextPlugin {
 
 				switch (match[1]) {
 					case 'next-edge-ssr-loader': {
-						serverQuery.pageQueries.push(match[2]);
+						serverQuery.pageQueries!.push(match[2]);
 						break;
 					}
 
 					case 'next-edge-function-loader': {
-						serverQuery.functionQueries.push(match[2]);
+						serverQuery.functionQueries!.push(match[2]);
 						break;
 					}
 
