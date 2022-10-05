@@ -2,7 +2,10 @@
 import path from 'path';
 import {stringify} from 'node:querystring';
 import type {NextConfig} from 'next';
-import {COMPILER_NAMES} from 'next/dist/shared/lib/constants';
+import {
+	COMPILER_NAMES,
+	EDGE_RUNTIME_WEBPACK,
+} from 'next/dist/shared/lib/constants';
 import type {Compiler, Configuration} from 'webpack';
 import {Options} from './loaders/ignext-server-loader';
 
@@ -82,6 +85,7 @@ class IgnextPlugin {
 					type: 'assign',
 				},
 				asyncChunks: false,
+				runtime: EDGE_RUNTIME_WEBPACK,
 			};
 
 			return undefined as unknown as boolean;
