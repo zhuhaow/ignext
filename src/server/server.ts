@@ -152,6 +152,7 @@ export function createIgnextHandler(options: IgnextHandlerOptions) {
 
 	const handler = server.getRequestHandler();
 
+	// TODO: apply logic from `adapter.ts` here
 	return async (request: Request) => {
 		const extendedRequest = new WebNextRequest(request);
 		const extendedResponse = new WebNextResponse();
