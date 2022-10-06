@@ -35,10 +35,12 @@ export default function ignextServerLoader(this: LoaderContext<Options>) {
 		__dirname,
 		'../internal/server',
 	)}"
+
+	global.process = {env: {NEXT_PRIVATE_MINIMAL_MODE: "0"}};
 	
 	const handlerOptions = ${buildHandlerOptions.call(this, options as any)};
 
-	export default createIgnextHandler(handlerOptions);
+	export const onRequest = createIgnextHandler(handlerOptions);
 	`;
 }
 

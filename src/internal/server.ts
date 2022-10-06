@@ -154,7 +154,7 @@ export function createIgnextHandler(options: IgnextHandlerOptions) {
 	const handler = server.getRequestHandler();
 
 	// TODO: apply logic from `adapter.ts` here
-	return async (request: Request) => {
+	return async ({request}: {request: Request}) => {
 		const extendedRequest = new WebNextRequest(request);
 		const extendedResponse = new WebNextResponse();
 		// Following what Next.js https://github.com/vercel/next.js/blob/canary/packages/next/build/webpack/loaders/next-edge-ssr-loader/render.ts
