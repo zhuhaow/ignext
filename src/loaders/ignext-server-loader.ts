@@ -74,7 +74,7 @@ function buildHandlerOptions(
 
 	const stringifyPath = (path?: string) => {
 		return path
-			? stringifyRequest(this, swapDistFolderWithEsmDistFolder(absoluteAppPath))
+			? stringifyRequest(this, swapDistFolderWithEsmDistFolder(path))
 			: undefined;
 	};
 
@@ -93,7 +93,7 @@ function buildHandlerOptions(
 		pageConfigs['/500'] = `require(${stringified500Path})`;
 	}
 
-	for (const [key, value] of Object.entries(loaderOptions.pageQueries)) {
+	for (const value of loaderOptions.pageQueries) {
 		const appDirLoaderString = Buffer.from(
 			value.appDirLoader ?? '',
 			'base64',
@@ -103,7 +103,7 @@ function buildHandlerOptions(
 			1,
 			-1,
 		)}`;
-		pageConfigs[key] = `require(${JSON.stringify(pageModPath)})`;
+		pageConfigs[value.page] = `require(${JSON.stringify(pageModPath)})`;
 	}
 
 	return `
@@ -125,13 +125,15 @@ function buildHandlerOptions(
 			},
 			appMod: ${stringifiedAppPath ? `require(${stringifiedAppPath})` : 'undefined'},
 			buildId: ${JSON.stringify(buildId)},
-			pagesOptions: ${JSON.stringify(pageConfigs)},
+			pagesOptions: {${Object.entries(pageConfigs)
+				.map(([k, v]) => `"${k}": ${v}`)
+				.join(',')}},
 			serverComponentManifest: ${
 				hasServerComponent ? 'self.__RSC_MANIFEST' : 'undefined'
 			},
 			serverCSSManifest: ${
 				hasServerComponent ? 'self.__RSC_CSS_MANIFEST' : 'undefined'
-			}
+			},
 		}
 	`;
 }
