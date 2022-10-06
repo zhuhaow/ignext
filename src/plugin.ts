@@ -3,7 +3,7 @@ import path from 'path';
 import {stringify} from 'node:querystring';
 import type {NextConfig} from 'next';
 import {COMPILER_NAMES} from 'next/dist/shared/lib/constants';
-import type {Compiler, Configuration} from 'webpack';
+import {Compiler, Configuration, DefinePlugin} from 'webpack';
 import {Options} from './loaders/ignext-server-loader';
 
 export function withIgnext(nextConfig: NextConfig): NextConfig {
@@ -25,7 +25,14 @@ function updateEdgeWebpackConfig(config: Configuration) {
 	}
 
 	config.plugins = config.plugins ?? [];
-	config.plugins.push(new IgnextPlugin());
+	config.plugins.push(
+		new IgnextPlugin(),
+		new DefinePlugin({
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			'process.env.NEXT_PRIVATE_MINIMAL_MODE': JSON.stringify('1'),
+		}),
+	);
+
 	// It's a map
 	(config.resolveLoader!.alias! as any)['ignext-server-loader'] = path.resolve(
 		__dirname,
