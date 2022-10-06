@@ -86,11 +86,11 @@ function buildHandlerOptions(
 	const pageConfigs: Record<string, string> = {};
 
 	if (stringifiedErrorPath) {
-		pageConfigs['/_error'] = `${stringifiedErrorPath}`;
+		pageConfigs['/_error'] = `require(${stringifiedErrorPath})`;
 	}
 
 	if (stringified500Path) {
-		pageConfigs['/500'] = `${stringified500Path}`;
+		pageConfigs['/500'] = `require(${stringified500Path})`;
 	}
 
 	for (const [key, value] of Object.entries(loaderOptions.pageQueries)) {
