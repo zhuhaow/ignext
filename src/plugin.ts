@@ -29,7 +29,7 @@ function updateEdgeWebpackConfig(config: Configuration) {
 		new IgnextPlugin(),
 		new DefinePlugin({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
-			'process.env.NEXT_PRIVATE_MINIMAL_MODE': JSON.stringify('1'),
+			'process.env.NEXT_PRIVATE_MINIMAL_MODE': JSON.stringify('0'),
 		}),
 	);
 
