@@ -4,9 +4,10 @@
   "description": "Ignite your Next.js app for Cloudflare",
   "packageManager": "pnpm@7.9.4",
   "bin": {
-    "ignext": "dist/index.js"
+    "ignext": "dist/bin.js"
   },
   "scripts": {
+    "build:bin": "esbuild --bundle --platform=node --outfile=dist/bin.js src/command/bin.ts",
     "build:plugin": "esbuild --bundle --platform=node --outfile=dist/plugin.js src/plugin.ts",
     "build:loader": "esbuild --bundle --platform=node --outfile=dist/loaders/ignext-server-loader.js src/loaders/ignext-server-loader.ts",
     "build:internal": "esbuild --outfile=dist/internal/server.js src/internal/server.ts && sed -i .bak -e 's/next\\/dist\\//next\\/dist\\/esm\\//g' dist/internal/server.js",
@@ -31,15 +32,18 @@
     "@types/fs-extra": "9.0.13",
     "@types/isomorphic-fetch": "^0.0.36",
     "@types/jest": "28.1.7",
+    "@types/klaw": "^3.0.3",
     "@types/lodash-es": "^4.17.6",
     "@types/node": "18.7.8",
     "@types/wait-on": "^5.3.1",
+    "commander": "^9.4.1",
     "esbuild": "^0.15.10",
     "execa": "^6.1.0",
     "fs-extra": "10.1.0",
     "get-port": "^6.1.2",
     "isomorphic-fetch": "^3.0.0",
     "jest": "28.1.3",
+    "klaw": "^4.0.1",
     "lodash-es": "^4.17.21",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.2",

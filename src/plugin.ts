@@ -92,7 +92,7 @@ class IgnextPlugin {
 				}
 			}
 
-			entry['ignext/server'] = {
+			entry['ignext/[[path]]'] = {
 				import: [`ignext-server-loader?${stringify({...serverQuery})}!`],
 				library: {
 					type: 'module',
