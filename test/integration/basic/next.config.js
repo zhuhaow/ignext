@@ -1,4 +1,4 @@
-const {withIgnext} = require('../../../dist/index.js');
+const {withIgnext} = require('../../../dist/plugin.js');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

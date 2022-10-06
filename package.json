@@ -7,7 +7,7 @@
     "ignext": "dist/index.js"
   },
   "scripts": {
-    "build:plugin": "esbuild --bundle --platform=node --outfile=dist/index.js src/index.ts",
+    "build:plugin": "esbuild --bundle --platform=node --outfile=dist/plugin.js src/plugin.ts",
     "build:loader": "esbuild --bundle --platform=node --outfile=dist/loaders/ignext-server-loader.js src/loaders/ignext-server-loader.ts",
     "build:internal": "esbuild --outfile=dist/internal/server.js src/internal/server.ts && sed -i .bak -e 's/next\\/dist\\//next\\/dist\\/esm\\//g' dist/internal/server.js",
     "build": "rimraf dist && mkdir dist && run-p build:*",
