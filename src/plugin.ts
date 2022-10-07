@@ -20,7 +20,10 @@ export function withIgnext(nextConfig: NextConfig): NextConfig {
 }
 
 function updateEdgeWebpackConfig(config: Configuration) {
-	if (config.name !== COMPILER_NAMES.edgeServer) {
+	if (
+		config.name !== COMPILER_NAMES.edgeServer ||
+		config.mode === 'development'
+	) {
 		return;
 	}
 
