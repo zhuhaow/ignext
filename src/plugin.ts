@@ -62,7 +62,7 @@ function updateEdgeWebpackConfig(config: Configuration) {
 
 class IgnextPlugin {
 	apply(compiler: Compiler) {
-		compiler.hooks.entryOption.tap('IgnextPlugin', (_context, entry) => {
+		compiler.hooks.entryOption.tap(this.constructor.name, (_context, entry) => {
 			if (typeof entry !== 'object') {
 				throw new TypeError(
 					'Failed to get entry information since entry is not a static object',
