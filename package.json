@@ -28,7 +28,7 @@
   "license": "MIT",
   "homepage": "https://github.com/zhuhaow/ignext",
   "devDependencies": {
-    "@cloudflare/workers-types": "^3.14.1",
+    "@cloudflare/workers-types": "^3.16.0",
     "@types/fs-extra": "9.0.13",
     "@types/isomorphic-fetch": "^0.0.36",
     "@types/jest": "28.1.7",
