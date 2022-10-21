@@ -1,5 +1,6 @@
 import {PrerenderManifest} from 'next/dist/build';
 import {FontLoaderManifest} from 'next/dist/build/webpack/plugins/font-loader-manifest-plugin';
+import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plugin';
 import {PagesManifest} from 'next/dist/build/webpack/plugins/pages-manifest-plugin';
 import {FontManifest} from 'next/dist/server/font-utils';
 
@@ -22,6 +23,8 @@ export abstract class ManifestProvider {
 	abstract getFontLoaderManifest(): FontLoaderManifest | undefined;
 
 	abstract getBuildId(): string;
+
+	abstract getMiddlewareManifest(): MiddlewareManifest | undefined;
 }
 
 export class IgnextManifestProvider extends ManifestProvider {
@@ -37,6 +40,7 @@ export class IgnextManifestProvider extends ManifestProvider {
 		private readonly fontLoaderManifest?: FontLoaderManifest,
 		private readonly pagesManifest?: PagesManifest,
 		private readonly appPathsManifest?: PagesManifest,
+		private readonly middlewareManefest?: MiddlewareManifest,
 	) {
 		super();
 	}
@@ -78,5 +82,9 @@ export class IgnextManifestProvider extends ManifestProvider {
 
 	getBuildId(): string {
 		return this.buildId;
+	}
+
+	getMiddlewareManifest(): MiddlewareManifest | undefined {
+		return this.middlewareManefest;
 	}
 }

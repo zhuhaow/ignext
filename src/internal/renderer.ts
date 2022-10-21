@@ -1,55 +1,58 @@
 /* eslint-disable n/no-deprecated-api */
 /* eslint-disable unicorn/prefer-node-protocol */
-import {parse as parseUrl, format as formatUrl} from 'url';
 import type {UrlWithParsedQuery} from 'url';
+import {format as formatUrl, parse as parseUrl} from 'url';
+import {NextConfig} from 'next';
+import * as Log from 'next/dist/build/output/log';
+import {getProperError} from 'next/dist/lib/is-error';
+import {getRedirectStatus} from 'next/dist/lib/redirect-status';
+import {checkIsManualRevalidate} from 'next/dist/server/api-utils';
 import {BaseNextRequest, BaseNextResponse} from 'next/dist/server/base-http';
+import BaseServer, {
+	FindComponentsResult,
+	NoFallbackError,
+	prepareServerlessUrl,
+	RequestContext,
+} from 'next/dist/server/base-server';
+import {LoadComponentsReturnType} from 'next/dist/server/load-components';
+import {RenderOpts} from 'next/dist/server/render';
+import RenderResult from 'next/dist/server/render-result';
 import {
 	getRequestMeta,
 	NextParsedUrlQuery,
 	NextUrlWithParsedQuery,
 } from 'next/dist/server/request-meta';
-import {NextConfig} from 'next';
-import {isBot} from 'next/dist/server/web/spec-extension/user-agent';
-import BaseServer, {
-	FindComponentsResult,
-	NoFallbackError,
-	Options,
-	prepareServerlessUrl,
-	RequestContext,
-} from 'next/dist/server/base-server';
-import RenderResult from 'next/dist/server/render-result';
-import {
-	PayloadOptions,
-	setRevalidateHeaders,
-} from 'next/dist/server/send-payload';
-import {
-	NEXT_BUILTIN_DOCUMENT,
-	STATIC_STATUS_PAGES,
-} from 'next/dist/shared/lib/constants';
-import {checkIsManualRevalidate} from 'next/dist/server/api-utils';
-import {removeTrailingSlash} from 'next/dist/shared/lib/router/utils/remove-trailing-slash';
-import {denormalizePagePath} from 'next/dist/shared/lib/page-path/denormalize-page-path';
-import {normalizeLocalePath} from 'next/dist/shared/lib/i18n/normalize-locale-path';
-import {getRedirectStatus} from 'next/dist/lib/redirect-status';
-import {
-	DecodeError,
-	execOnce,
-	normalizeRepeatedSlashes,
-} from 'next/dist/shared/lib/utils';
 import {
 	ResponseCacheBase,
 	ResponseCacheEntry,
 	ResponseCacheValue,
 } from 'next/dist/server/response-cache';
+import {
+	PayloadOptions,
+	setRevalidateHeaders,
+} from 'next/dist/server/send-payload';
+import {isBlockedPage} from 'next/dist/server/utils';
+import {isBot} from 'next/dist/server/web/spec-extension/user-agent';
+import {
+	NEXT_BUILTIN_DOCUMENT,
+	STATIC_STATUS_PAGES,
+} from 'next/dist/shared/lib/constants';
+import {normalizeLocalePath} from 'next/dist/shared/lib/i18n/normalize-locale-path';
+import {denormalizePagePath} from 'next/dist/shared/lib/page-path/denormalize-page-path';
 import escapePathDelimiters from 'next/dist/shared/lib/router/utils/escape-path-delimiters';
-import {RenderOpts} from 'next/dist/server/render';
 import {isDynamicRoute} from 'next/dist/shared/lib/router/utils/is-dynamic';
-import * as Log from 'next/dist/build/output/log';
-import {getProperError} from 'next/dist/lib/is-error';
-import {LoadComponentsReturnType} from 'next/dist/server/load-components';
+import {removeTrailingSlash} from 'next/dist/shared/lib/router/utils/remove-trailing-slash';
+import {
+	DecodeError,
+	execOnce,
+	normalizeRepeatedSlashes,
+} from 'next/dist/shared/lib/utils';
+import {DynamicRoutes} from 'next/dist/server/router';
+import {normalizeAppPath} from 'next/dist/shared/lib/router/utils/app-paths';
+import {Params} from 'next/dist/shared/lib/router/utils/route-matcher';
+import {Logger} from './logger';
 import {ManifestProvider} from './manifest-provider';
 import {PageChecker} from './page-checker';
-import {Logger} from './logger';
 
 type ResponsePayload = {
 	type: 'html' | 'json' | 'rsc';
@@ -75,6 +78,8 @@ export abstract class Renderer {
 		);
 	});
 
+	private readonly appPathRoutes: Record<string, string[]> = {};
+
 	// eslint-disable-next-line max-params
 	constructor(
 		private readonly nextConfig: NextConfig,
@@ -84,7 +89,48 @@ export abstract class Renderer {
 		private readonly manifestProvider: ManifestProvider,
 		private readonly responseCache: ResponseCacheBase,
 		private readonly logger: Logger,
-	) {}
+		private readonly dynamicRoutes: DynamicRoutes,
+	) {
+		this.appPathRoutes = this.getAppPathRoutes();
+	}
+
+	// eslint-disable-next-line max-params
+	public async render(
+		request: BaseNextRequest,
+		// eslint-disable-next-line unicorn/prevent-abbreviations
+		res: BaseNextResponse,
+		pathname: string,
+		query: NextParsedUrlQuery = {},
+		parsedUrl?: NextUrlWithParsedQuery,
+		internalRender = false,
+	): Promise<void> {
+		if (!pathname.startsWith('/')) {
+			console.warn(
+				`Cannot render page with path "${pathname}", did you mean "/${pathname}"?. See more info here: https://nextjs.org/docs/messages/render-no-starting-slash`,
+			);
+		}
+
+		if (
+			this.renderOpts.customServer &&
+			pathname === '/index' &&
+			!(await this.pageChecker.hasPage('/index'))
+		) {
+			// Maintain backwards compatibility for custom server
+			// (see custom-server integration tests)
+			pathname = '/';
+		}
+
+		if (isBlockedPage(pathname)) {
+			return this.render404(request, res, parsedUrl);
+		}
+
+		return this.pipe(async (ctx) => this.renderToResponse(ctx), {
+			req: request,
+			res,
+			pathname,
+			query,
+		});
+	}
 
 	public async render404(
 		request: BaseNextRequest,
@@ -178,6 +224,71 @@ export abstract class Renderer {
 		};
 	}
 
+	protected getAppPathRoutes(): Record<string, string[]> {
+		const appPathRoutes: Record<string, string[]> = {};
+
+		for (const entry of Object.keys(
+			this.manifestProvider.getAppPathsManifest() ?? {},
+		)) {
+			const normalizedPath = normalizeAppPath(entry) || '/';
+			if (!appPathRoutes[normalizedPath]) {
+				appPathRoutes[normalizedPath] = [];
+			}
+
+			appPathRoutes[normalizedPath].push(entry);
+		}
+
+		return appPathRoutes;
+	}
+
+	protected getOriginalAppPaths(route: string) {
+		const originalAppPath = this.appPathRoutes?.[route];
+
+		if (!originalAppPath) {
+			return undefined;
+		}
+
+		return originalAppPath;
+	}
+
+	protected async renderPageComponent(
+		ctx: RequestContext,
+		bubbleNoFallback: boolean,
+	) {
+		const {query, pathname} = ctx;
+
+		const appPaths = this.getOriginalAppPaths(pathname);
+		const isAppPath = Array.isArray(appPaths);
+
+		let page = pathname;
+		if (isAppPath) {
+			// When it's an array, we need to pass all parallel routes to the loader.
+			page = appPaths[0];
+		}
+
+		const result = await this.findPageComponents({
+			pathname: page,
+			query,
+			params: ctx.renderOpts.params ?? {},
+			isAppPath,
+			appPaths,
+			sriEnabled: Boolean(this.nextConfig.experimental?.sri?.algorithm),
+		});
+		if (result) {
+			try {
+				return await this.renderToResponseWithComponents(ctx, result);
+			} catch (error: unknown) {
+				const isNoFallbackError = error instanceof NoFallbackError;
+
+				if (!isNoFallbackError || (isNoFallbackError && bubbleNoFallback)) {
+					throw error;
+				}
+			}
+		}
+
+		return false;
+	}
+
 	protected abstract sendRenderResult(
 		request: BaseNextRequest,
 		// eslint-disable-next-line unicorn/prevent-abbreviations
@@ -198,7 +309,7 @@ export abstract class Renderer {
 		query: NextParsedUrlQuery;
 		params: Params;
 		isAppPath: boolean;
-		appPaths?: string[] | undefined;
+		appPaths?: string[];
 		sriEnabled?: boolean;
 	}): Promise<FindComponentsResult | undefined>;
 
@@ -983,5 +1094,138 @@ export abstract class Renderer {
 		}
 
 		return path;
+	}
+
+	// eslint-disable-next-line complexity
+	private async renderToResponse(
+		ctx: RequestContext,
+	): Promise<ResponsePayload | undefined> {
+		const {res, query, pathname} = ctx;
+		let page = pathname;
+		const bubbleNoFallback = Boolean(query._nextBubbleNoFallback);
+		delete query._nextBubbleNoFallback;
+
+		try {
+			// Ensure a request to the URL /accounts/[id] will be treated as a dynamic
+			// route correctly and not loaded immediately without parsing params.
+			if (!isDynamicRoute(page)) {
+				const result = await this.renderPageComponent(ctx, bubbleNoFallback);
+				if (result !== false) return result;
+			}
+
+			if (this.dynamicRoutes) {
+				for (const dynamicRoute of this.dynamicRoutes) {
+					const parameters = dynamicRoute.match(pathname);
+					if (!parameters) {
+						continue;
+					}
+
+					page = dynamicRoute.page;
+					const result = await this.renderPageComponent(
+						{
+							...ctx,
+							pathname: page,
+							renderOpts: {
+								...ctx.renderOpts,
+								params: parameters,
+							},
+						},
+						bubbleNoFallback,
+					);
+					if (result !== false) return result;
+				}
+			}
+
+			// Currently edge functions aren't receiving the x-matched-path
+			// header so we need to fallback to matching the current page
+			// when we weren't able to match via dynamic route to handle
+			// the rewrite case
+			// @ts-expect-error extended in child class web-server
+			if (this.serverOptions.webServerConfig) {
+				// @ts-expect-error extended in child class web-server
+				ctx.pathname = this.serverOptions.webServerConfig.page;
+				const result = await this.renderPageComponent(ctx, bubbleNoFallback);
+				if (result !== false) return result;
+			}
+		} catch (error) {
+			const error_ = getProperError(error);
+
+			if (error instanceof MissingStaticPage) {
+				console.error(
+					'Invariant: failed to load static page',
+					JSON.stringify(
+						{
+							page,
+							url: ctx.req.url,
+							matchedPath: ctx.req.headers['x-matched-path'],
+							initUrl: getRequestMeta(ctx.req, '__NEXT_INIT_URL'),
+							didRewrite: getRequestMeta(ctx.req, '_nextDidRewrite'),
+							rewroteUrl: getRequestMeta(ctx.req, '_nextRewroteUrl'),
+						},
+						null,
+						2,
+					),
+				);
+				throw error_;
+			}
+
+			if (error_ instanceof NoFallbackError && bubbleNoFallback) {
+				throw error_;
+			}
+
+			if (error_ instanceof DecodeError || error_ instanceof NormalizeError) {
+				res.statusCode = 400;
+				return await this.renderErrorToResponse(ctx, error_);
+			}
+
+			res.statusCode = 500;
+
+			// If pages/500 is present we still need to trigger
+			// /_error `getInitialProps` to allow reporting error
+			if (await this.hasPage('/500')) {
+				ctx.query.__nextCustomErrorRender = '1';
+				await this.renderErrorToResponse(ctx, error_);
+				delete ctx.query.__nextCustomErrorRender;
+			}
+
+			const isWrappedError = error_ instanceof WrappedBuildError;
+
+			if (!isWrappedError) {
+				if (
+					(this.minimalMode && process.env.NEXT_RUNTIME !== 'edge') ||
+					this.renderOpts.dev
+				) {
+					if (isError(error_)) error_.page = page;
+					throw error_;
+				}
+
+				this.logError(getProperError(error_));
+			}
+
+			const response = await this.renderErrorToResponse(
+				ctx,
+				isWrappedError ? error_.innerError : error_,
+			);
+			return response;
+		}
+
+		if (
+			this.router.catchAllMiddleware[0] &&
+			Boolean(ctx.req.headers['x-nextjs-data']) &&
+			(!res.statusCode || res.statusCode === 200 || res.statusCode === 404)
+		) {
+			res.setHeader(
+				'x-nextjs-matched-path',
+				`${query.__nextLocale ? `/${query.__nextLocale}` : ''}${pathname}`,
+			);
+			res.statusCode = 200;
+			res.setHeader('content-type', 'application/json');
+			res.body('{}');
+			res.send();
+			return null;
+		}
+
+		res.statusCode = 404;
+		return this.renderErrorToResponse(ctx, null);
 	}
 }
