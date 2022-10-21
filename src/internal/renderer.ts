@@ -11,11 +11,10 @@ import {BaseNextRequest, BaseNextResponse} from 'next/dist/server/base-http';
 import BaseServer, {
 	FindComponentsResult,
 	NoFallbackError,
-	prepareServerlessUrl,
 	RequestContext,
 } from 'next/dist/server/base-server';
 import {LoadComponentsReturnType} from 'next/dist/server/load-components';
-import {RenderOpts} from 'next/dist/server/render';
+import {RenderOpts, renderToHTML} from 'next/dist/server/render';
 import RenderResult from 'next/dist/server/render-result';
 import {
 	getRequestMeta,
@@ -45,11 +44,18 @@ import {removeTrailingSlash} from 'next/dist/shared/lib/router/utils/remove-trai
 import {
 	DecodeError,
 	execOnce,
+	MissingStaticPage,
+	NormalizeError,
 	normalizeRepeatedSlashes,
 } from 'next/dist/shared/lib/utils';
 import {DynamicRoutes} from 'next/dist/server/router';
 import {normalizeAppPath} from 'next/dist/shared/lib/router/utils/app-paths';
 import {Params} from 'next/dist/shared/lib/router/utils/route-matcher';
+import {generateETag} from 'next/dist/server/lib/etag';
+import {byteLength} from 'next/dist/server/api-utils/web';
+import {WebNextResponse} from 'next/dist/server/base-http/web';
+import {renderToHTMLOrFlight} from 'next/dist/server/app-render';
+import {NextConfigComplete} from 'next/dist/server/config-shared';
 import {Logger} from './logger';
 import {ManifestProvider} from './manifest-provider';
 import {PageChecker} from './page-checker';
@@ -71,6 +77,17 @@ class WrappedBuildError extends Error {
 	}
 }
 
+interface RendererOptions {
+	nextConfig: NextConfigComplete;
+	renderOpts: BaseServer['renderOpts'];
+	pageChecker: PageChecker;
+	manifestProvider: ManifestProvider;
+	responseCache: ResponseCacheBase;
+	logger: Logger;
+	dynamicRoutes: DynamicRoutes;
+	hasMiddleware: boolean;
+}
+
 export abstract class Renderer {
 	private readonly customErrorNo404Warn = execOnce(() => {
 		Log.warn(
@@ -78,19 +95,27 @@ export abstract class Renderer {
 		);
 	});
 
-	private readonly appPathRoutes: Record<string, string[]> = {};
+	private readonly appPathRoutes: Record<string, string[]>;
 
-	// eslint-disable-next-line max-params
-	constructor(
-		private readonly nextConfig: NextConfig,
-		// eslint-disable-next-line unicorn/prevent-abbreviations
-		private readonly renderOpts: BaseServer['renderOpts'],
-		private readonly pageChecker: PageChecker,
-		private readonly manifestProvider: ManifestProvider,
-		private readonly responseCache: ResponseCacheBase,
-		private readonly logger: Logger,
-		private readonly dynamicRoutes: DynamicRoutes,
-	) {
+	private readonly nextConfig: NextConfigComplete;
+	private readonly renderOpts: BaseServer['renderOpts'];
+	private readonly pageChecker: PageChecker;
+	private readonly manifestProvider: ManifestProvider;
+	private readonly responseCache: ResponseCacheBase;
+	private readonly logger: Logger;
+	private readonly dynamicRoutes: DynamicRoutes;
+	private readonly hasMiddleware: boolean;
+
+	constructor(options: RendererOptions) {
+		this.nextConfig = options.nextConfig;
+		this.renderOpts = options.renderOpts;
+		this.pageChecker = options.pageChecker;
+		this.manifestProvider = options.manifestProvider;
+		this.responseCache = options.responseCache;
+		this.logger = options.logger;
+		this.dynamicRoutes = options.dynamicRoutes;
+		this.hasMiddleware = options.hasMiddleware;
+
 		this.appPathRoutes = this.getAppPathRoutes();
 	}
 
@@ -629,6 +654,7 @@ export abstract class Renderer {
 			// TODO-APP: should the first render for a dynamic app path
 			// be static so we can collect revalidate and populate the
 			// cache if there are no dynamic data requirements
+
 			options.supportsDynamicHTML =
 				!isSSG &&
 				!isLikeServerless &&
@@ -932,9 +958,6 @@ export abstract class Renderer {
 						// We need to generate the fallback on-demand for development.
 
 						query.__nextFallback = 'true';
-						if (isLikeServerless) {
-							prepareServerlessUrl(req, query);
-						}
 
 						const result = await doRender();
 						if (!result) {
@@ -1121,6 +1144,7 @@ export abstract class Renderer {
 					}
 
 					page = dynamicRoute.page;
+					// eslint-disable-next-line no-await-in-loop
 					const result = await this.renderPageComponent(
 						{
 							...ctx,
@@ -1135,19 +1159,7 @@ export abstract class Renderer {
 					if (result !== false) return result;
 				}
 			}
-
-			// Currently edge functions aren't receiving the x-matched-path
-			// header so we need to fallback to matching the current page
-			// when we weren't able to match via dynamic route to handle
-			// the rewrite case
-			// @ts-expect-error extended in child class web-server
-			if (this.serverOptions.webServerConfig) {
-				// @ts-expect-error extended in child class web-server
-				ctx.pathname = this.serverOptions.webServerConfig.page;
-				const result = await this.renderPageComponent(ctx, bubbleNoFallback);
-				if (result !== false) return result;
-			}
-		} catch (error) {
+		} catch (error: unknown) {
 			const error_ = getProperError(error);
 
 			if (error instanceof MissingStaticPage) {
@@ -1175,14 +1187,14 @@ export abstract class Renderer {
 
 			if (error_ instanceof DecodeError || error_ instanceof NormalizeError) {
 				res.statusCode = 400;
-				return await this.renderErrorToResponse(ctx, error_);
+				return this.renderErrorToResponse(ctx, error_);
 			}
 
 			res.statusCode = 500;
 
 			// If pages/500 is present we still need to trigger
 			// /_error `getInitialProps` to allow reporting error
-			if (await this.hasPage('/500')) {
+			if (await this.pageChecker.hasPage('/500')) {
 				ctx.query.__nextCustomErrorRender = '1';
 				await this.renderErrorToResponse(ctx, error_);
 				delete ctx.query.__nextCustomErrorRender;
@@ -1191,15 +1203,7 @@ export abstract class Renderer {
 			const isWrappedError = error_ instanceof WrappedBuildError;
 
 			if (!isWrappedError) {
-				if (
-					(this.minimalMode && process.env.NEXT_RUNTIME !== 'edge') ||
-					this.renderOpts.dev
-				) {
-					if (isError(error_)) error_.page = page;
-					throw error_;
-				}
-
-				this.logError(getProperError(error_));
+				this.logger.logError(getProperError(error_));
 			}
 
 			const response = await this.renderErrorToResponse(
@@ -1210,7 +1214,7 @@ export abstract class Renderer {
 		}
 
 		if (
-			this.router.catchAllMiddleware[0] &&
+			this.hasMiddleware &&
 			Boolean(ctx.req.headers['x-nextjs-data']) &&
 			(!res.statusCode || res.statusCode === 200 || res.statusCode === 404)
 		) {
@@ -1222,10 +1226,160 @@ export abstract class Renderer {
 			res.setHeader('content-type', 'application/json');
 			res.body('{}');
 			res.send();
-			return null;
+			return undefined;
 		}
 
 		res.statusCode = 404;
-		return this.renderErrorToResponse(ctx, null);
+		return this.renderErrorToResponse(ctx, undefined);
+	}
+}
+
+export type IgnextRendererOptions =
+	| RendererOptions & {
+			loadComponent: (
+				pathname: string,
+			) => Promise<LoadComponentsReturnType | undefined>;
+	  };
+
+export class IgnextRenderer extends Renderer {
+	private readonly loadComponent: (
+		pathname: string,
+	) => Promise<LoadComponentsReturnType | undefined>;
+
+	constructor({loadComponent, ...options}: IgnextRendererOptions) {
+		super(options);
+
+		this.loadComponent = loadComponent;
+	}
+
+	protected async findPageComponents({
+		pathname,
+		query,
+		params,
+	}: {
+		pathname: string;
+		query: NextParsedUrlQuery;
+		params: Params;
+		isAppPath: boolean;
+		appPaths?: string[] | undefined;
+		sriEnabled?: boolean | undefined;
+	}): Promise<FindComponentsResult | undefined> {
+		const result = await this.loadComponent(pathname);
+		if (!result) return undefined;
+
+		return {
+			query: {
+				...query,
+				...params,
+			},
+			components: result,
+		};
+	}
+
+	protected async sendRenderResult(
+		request: BaseNextRequest,
+		// eslint-disable-next-line unicorn/prevent-abbreviations
+		res: WebNextResponse,
+		options: {
+			result: RenderResult;
+			type: 'html' | 'json' | 'rsc';
+			generateEtags: boolean;
+			poweredByHeader: boolean;
+			options?: PayloadOptions | undefined;
+		},
+	): Promise<void> {
+		res.setHeader('X-Edge-Runtime', '1');
+
+		// Add necessary headers.
+		// @TODO: Share the isomorphic logic with server/send-payload.ts.
+		if (options.poweredByHeader && options.type === 'html') {
+			res.setHeader('X-Powered-By', 'Next.js');
+		}
+
+		const resultContentType = options.result.contentType();
+
+		if (!res.getHeader('Content-Type')) {
+			res.setHeader(
+				'Content-Type',
+				resultContentType
+					? resultContentType
+					: options.type === 'json'
+					? 'application/json'
+					: 'text/html; charset=utf-8',
+			);
+		}
+
+		if (options.result.isDynamic()) {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+			const writer = res.transformStream.writable.getWriter();
+			await options.result.pipe({
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+				write: (chunk: Uint8Array) => writer.write(chunk),
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+				end: () => writer.close(),
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+				_destroy: (error: Error) => writer.abort(error),
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				get destroy() {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+					return this._destroy;
+				},
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				set destroy(value) {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					this._destroy = value;
+				},
+				// eslint-disable-next-line @typescript-eslint/no-empty-function
+				cork() {},
+				// eslint-disable-next-line @typescript-eslint/no-empty-function
+				uncork() {},
+				// Not implemented: on/removeListener
+			} as any);
+		} else {
+			const payload = options.result.toUnchunkedString();
+			res.setHeader('Content-Length', String(byteLength(payload)));
+			if (options.generateEtags) {
+				res.setHeader('ETag', generateETag(payload));
+			}
+
+			res.body(payload);
+		}
+
+		res.send();
+	}
+
+	protected async getFallback(page: string): Promise<string> {
+		return '';
+	}
+
+	// eslint-disable-next-line max-params, @typescript-eslint/naming-convention
+	protected async renderHTML(
+		request: BaseNextRequest,
+		// eslint-disable-next-line unicorn/prevent-abbreviations
+		res: BaseNextResponse,
+		pathname: string,
+		query: NextParsedUrlQuery,
+		renderOptions: RenderOpts,
+	): Promise<RenderResult | undefined> {
+		const renderFunction = renderOptions.isAppPath
+			? renderToHTMLOrFlight
+			: renderToHTML;
+
+		return (
+			(await renderFunction(
+				{
+					url: request.url,
+					cookies: request.cookies,
+					headers: request.headers,
+				} as any,
+				{} as any,
+				pathname,
+				query,
+				Object.assign(renderOptions, {
+					disableOptimizedLoading: true,
+					runtime: 'experimental-edge',
+				}),
+			)) ?? undefined
+		);
 	}
 }
