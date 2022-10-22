@@ -48,14 +48,13 @@ import {IgnextRouterBuilder, RouterBuilder} from './router-builder';
 
 interface WebServerOptions {
 	manifestProvider: ManifestProvider;
-	hasAppDir: boolean;
 	nextConfig: NextConfigComplete;
 	loadComponent: (
 		pathname: string,
 	) => Promise<LoadComponentsReturnType | undefined>;
 }
 
-export default class Server {
+export class IgnextServer {
 	manifestProvider: ManifestProvider;
 	renderer: Renderer;
 	routeBuilder: RouterBuilder;
@@ -65,10 +64,10 @@ export default class Server {
 
 	constructor(options: WebServerOptions) {
 		this.manifestProvider = options.manifestProvider;
-		this.hasAppDir = options.hasAppDir;
 		this.nextConfig = options.nextConfig;
 
 		this.logger = new ConsoleLogger(false);
+		this.hasAppDir = Boolean(this.manifestProvider.getAppPathsManifest());
 
 		const dynamicRoutes = this.getDynamicRoutes();
 		const pageChecker = new IgnextPageChecker(
