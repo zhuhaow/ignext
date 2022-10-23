@@ -64,7 +64,6 @@ function buildHandlerOptions(
 		absoluteAppPath,
 		absolute500Path,
 		absoluteErrorPath,
-		pagesType,
 	} = loaderOptions.pageQueries[0];
 
 	const stringifyPath = (path?: string) => {
