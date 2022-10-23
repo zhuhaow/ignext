@@ -1,8 +1,7 @@
 /* eslint-disable unicorn/prefer-node-protocol */
-import {parse as parseQs} from 'querystring';
-
 // eslint-disable-next-line n/no-deprecated-api
 import {format as formatUrl, parse as parseUrl, UrlWithParsedQuery} from 'url';
+import {parse as parseQs} from 'querystring';
 import {getProperError} from 'next/dist/lib/is-error';
 import {CustomRoutes} from 'next/dist/lib/load-custom-routes';
 import {getCookieParser, setLazyProp} from 'next/dist/server/api-utils';
@@ -88,6 +87,7 @@ export class IgnextServer {
 				canonicalBase: this.nextConfig.amp?.canonicalBase ?? '',
 				buildId: this.manifestProvider.getBuildId(),
 				generateEtags: this.nextConfig.generateEtags,
+
 				previewProps: this.manifestProvider.getPrerenderManifest().preview,
 				customServer: false,
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -175,7 +175,7 @@ export class IgnextServer {
 			getSortedRoutes(
 				[
 					...Object.keys(appPathRoutes),
-					...Object.keys(this.manifestProvider.getPagesManifest()!),
+					...Object.keys(this.manifestProvider.getPagesManifest()),
 				].map(
 					(page) =>
 						normalizeLocalePath(page, this.nextConfig.i18n?.locales).pathname,

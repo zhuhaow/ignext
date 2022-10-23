@@ -8,12 +8,12 @@ import {nextBuild, wranglerDev} from '../../util';
 
 jest.setTimeout(20_000);
 
-let wranglerProcess: ExecaChildProcess;
+let wranglerProcess: ExecaChildProcess | undefined;
 let wranglerPort: number;
 
 beforeAll(async () => {
 	await nextBuild(__dirname);
-	await export_(__dirname, join(__dirname, '.ignext'));
+	await export_(__dirname);
 	wranglerPort = await getPort();
 	wranglerProcess = wranglerDev(join(__dirname, '.ignext'), wranglerPort);
 	await waitOn({resources: ['tcp:localhost:' + wranglerPort.toString()]});
@@ -29,7 +29,7 @@ test('test API', async () => {
 });
 
 afterAll(() => {
-	wranglerProcess.kill('SIGTERM');
+	wranglerProcess?.kill('SIGTERM');
 });
 
 function getHost() {

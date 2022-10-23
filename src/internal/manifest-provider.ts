@@ -3,17 +3,19 @@ import {FontLoaderManifest} from 'next/dist/build/webpack/plugins/font-loader-ma
 import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plugin';
 import {PagesManifest} from 'next/dist/build/webpack/plugins/pages-manifest-plugin';
 import {FontManifest} from 'next/dist/server/font-utils';
+import {BuildManifest} from 'next/dist/server/get-page-files';
+import {ReactLoadableManifest} from 'next/dist/server/load-components';
 
 export abstract class ManifestProvider {
 	abstract getPrerenderManifest(): PrerenderManifest;
 
-	abstract getPagesManifest(): PagesManifest | undefined;
+	abstract getPagesManifest(): PagesManifest;
 
 	abstract getAppPathsManifest(): PagesManifest | undefined;
 
 	abstract getRoutesManifest(): any;
 
-	abstract getFontManifest(): FontManifest | undefined;
+	abstract getFontManifest(): FontManifest;
 
 	abstract getServerComponentManifest(): any;
 
@@ -27,64 +29,69 @@ export abstract class ManifestProvider {
 	abstract getMiddlewareManifest(): MiddlewareManifest | undefined;
 }
 
+export interface IgnextManifestProviderOptions {
+	prerenderManifest: PrerenderManifest;
+	serverComponentManifest: any;
+	serverCSSManifest: any;
+	routesManifest: any;
+	buildId: string;
+	pagesManifest: PagesManifest;
+	fontManifest: FontManifest;
+	fontLoaderManifest?: FontLoaderManifest;
+	appPathsManifest?: PagesManifest;
+	middlewareManefest?: MiddlewareManifest;
+	buildManifest: BuildManifest;
+	reactLoadableManifest: ReactLoadableManifest;
+	subresourceIntegrityManifest?: Record<string, string>;
+}
+
 export class IgnextManifestProvider extends ManifestProvider {
-	// eslint-disable-next-line max-params
-	constructor(
-		private readonly prerenderManifest: PrerenderManifest,
-		private readonly serverComponentManifest: any,
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		private readonly serverCSSManifest: any,
-		private readonly routesManifest: any,
-		private readonly buildId: string,
-		private readonly fontManifest?: FontManifest,
-		private readonly fontLoaderManifest?: FontLoaderManifest,
-		private readonly pagesManifest?: PagesManifest,
-		private readonly appPathsManifest?: PagesManifest,
-		private readonly middlewareManefest?: MiddlewareManifest,
-	) {
+	private readonly options: IgnextManifestProviderOptions;
+	constructor(options: IgnextManifestProviderOptions) {
 		super();
+		this.options = options;
 	}
 
 	getPrerenderManifest(): PrerenderManifest {
-		return this.prerenderManifest;
+		return this.options.prerenderManifest;
 	}
 
-	getPagesManifest(): PagesManifest | undefined {
-		return this.pagesManifest;
+	getPagesManifest(): PagesManifest {
+		return this.options.pagesManifest;
 	}
 
 	getAppPathsManifest(): PagesManifest | undefined {
-		return this.appPathsManifest;
+		return this.options.appPathsManifest;
 	}
 
 	getRoutesManifest(): any {
-		return this.routesManifest;
+		return this.options.routesManifest;
 	}
 
-	getFontManifest(): FontManifest | undefined {
-		return this.fontManifest;
+	getFontManifest(): FontManifest {
+		return this.options.fontManifest;
 	}
 
 	getServerComponentManifest() {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-		return this.serverComponentManifest;
+		return this.options.serverComponentManifest;
 	}
 
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	getServerCSSManifest() {
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
-		return this.serverCSSManifest;
+		return this.options.serverCSSManifest;
 	}
 
 	getFontLoaderManifest(): FontLoaderManifest | undefined {
-		return this.fontLoaderManifest;
+		return this.options.fontLoaderManifest;
 	}
 
 	getBuildId(): string {
-		return this.buildId;
+		return this.options.buildId;
 	}
 
 	getMiddlewareManifest(): MiddlewareManifest | undefined {
-		return this.middlewareManefest;
+		return this.options.middlewareManefest;
 	}
 }

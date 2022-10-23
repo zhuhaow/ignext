@@ -1,14 +1,10 @@
-import {PrerenderManifest} from 'next/dist/build';
-import {FontLoaderManifest} from 'next/dist/build/webpack/plugins/font-loader-manifest-plugin';
-import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plugin';
-import {PagesManifest} from 'next/dist/build/webpack/plugins/pages-manifest-plugin';
 import {WebNextRequest, WebNextResponse} from 'next/dist/server/base-http/web';
 import {NextConfigComplete} from 'next/dist/server/config-shared';
-import {FontManifest} from 'next/dist/server/font-utils';
-import {BuildManifest} from 'next/dist/server/get-page-files';
-import {ReactLoadableManifest} from 'next/dist/server/load-components';
 import {AppType, DocumentType} from 'next/dist/shared/lib/utils';
-import {IgnextManifestProvider} from './manifest-provider';
+import {
+	IgnextManifestProvider,
+	IgnextManifestProviderOptions,
+} from './manifest-provider';
 import {IgnextServer} from './server';
 
 interface PageRenderOptions {
@@ -19,37 +15,14 @@ interface PageRenderOptions {
 interface IgnextHandlerOptions {
 	dev: boolean;
 	config: NextConfigComplete;
-	buildManifest: BuildManifest;
-	reactLoadableManifest: ReactLoadableManifest;
-	subresourceIntegrityManifest?: Record<string, string>;
-	fontLoaderManifest?: FontLoaderManifest;
+	manifestOptions: IgnextManifestProviderOptions;
 	Document?: DocumentType;
 	appMod: any;
-	buildId: string;
 	pagesOptions: Partial<Record<string, PageRenderOptions>>;
-	serverComponentManifest: any;
-	serverCSSManifest: any;
-	prerenderManifest: PrerenderManifest;
-	pagesManifest?: PagesManifest;
-	appPathsManifest?: PagesManifest;
-	routesManifest: any;
-	fontManifest?: FontManifest;
-	middlewareManifeset?: MiddlewareManifest;
 }
 
 export function adapter(options: IgnextHandlerOptions) {
-	const manifestProvider = new IgnextManifestProvider(
-		options.prerenderManifest,
-		options.serverComponentManifest,
-		options.serverCSSManifest,
-		options.routesManifest,
-		options.buildId,
-		options.fontManifest,
-		options.fontLoaderManifest,
-		options.pagesManifest,
-		options.appPathsManifest,
-		options.middlewareManifeset,
-	);
+	const manifestProvider = new IgnextManifestProvider(options.manifestOptions);
 
 	const server = new IgnextServer({
 		manifestProvider,
@@ -64,10 +37,11 @@ export function adapter(options: IgnextHandlerOptions) {
 			// Some fields should be optional but marked as required in Next.js.
 			return {
 				dev: options.dev,
-				buildManifest: options.buildManifest,
-				reactLoadableManifest: options.reactLoadableManifest,
-				subresourceIntegrityManifest: options.subresourceIntegrityManifest,
-				fontLoaderManifest: options.fontLoaderManifest,
+				buildManifest: options.manifestOptions.buildManifest,
+				reactLoadableManifest: options.manifestOptions.reactLoadableManifest,
+				subresourceIntegrityManifest:
+					options.manifestOptions.subresourceIntegrityManifest,
+				fontLoaderManifest: options.manifestOptions.fontLoaderManifest,
 				// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-assignment
 				Document: options.Document as any,
 				// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -91,7 +65,6 @@ export function adapter(options: IgnextHandlerOptions) {
 
 	const handler = server.getRequestHandler();
 
-	// TODO: apply logic from `adapter.ts` here
 	return async ({request}: {request: Request}) => {
 		transformRequest(request, options.config);
 		const extendedRequest = new WebNextRequest(request);
@@ -106,10 +79,7 @@ export function adapter(options: IgnextHandlerOptions) {
 
 // From https://developers.cloudflare.com/fundamentals/get-started/reference/http-request-headers/
 // and https://developers.cloudflare.com/workers/runtime-apis/request/#incomingrequestcfproperties
-export function transformRequest(
-	request: Request,
-	nextConfig: NextConfigComplete,
-) {
+function transformRequest(request: Request, nextConfig: NextConfigComplete) {
 	Object.assign(request, {
 		ip: request.headers.get('CF-Connecting-IP') ?? undefined,
 		geo: {

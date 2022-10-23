@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/prefer-node-protocol */
-import {parse} from 'querystring';
 import {Buffer} from 'buffer';
 import path from 'path';
+import {parse} from 'querystring';
 import type {LoaderContext} from 'webpack';
 import type {EdgeSSRLoaderQuery} from 'next/dist/build/webpack/loaders/next-edge-ssr-loader';
 import type {EdgeFunctionLoaderOptions} from 'next/dist/build/webpack/loaders/next-edge-function-loader';
@@ -31,14 +31,15 @@ export default function ignextServerLoader(this: LoaderContext<Options>) {
 	};
 
 	return `
-	import {createIgnextHandler} from "${path.resolve(
-		__dirname,
-		'../internal/server',
-	)}"
-	
+	import {adapter} from "${path.resolve(__dirname, '../internal/adapter')}"
+
 	const handlerOptions = ${buildHandlerOptions.call(this, options as any)};
 
-	export const onRequest = createIgnextHandler(handlerOptions);
+	function createOnRequestHandler(manifestOptions) {
+		return adapter({...handlerOptions, manifestOptions})
+	}
+
+	export {createOnRequestHandler};
 	`;
 }
 
@@ -59,18 +60,11 @@ function buildHandlerOptions(
 	const {
 		dev,
 		stringifiedConfig,
-		sriEnabled,
-		hasFontLoaders,
 		absoluteDocumentPath,
 		absoluteAppPath,
 		absolute500Path,
 		absoluteErrorPath,
-		buildId,
 	} = loaderOptions.pageQueries[0];
-
-	const hasServerComponent = loaderOptions.pageQueries.some(
-		(q) => q.pagesType === 'app',
-	);
 
 	const stringifyPath = (path?: string) => {
 		return path
@@ -110,30 +104,15 @@ function buildHandlerOptions(
 		{
 			dev: ${JSON.stringify(dev)},
 			config: ${stringifiedConfig},
-			buildManifest: self.__BUILD_MANIFEST,
-			reactLoadableManifest: self.__REACT_LOADABLE_MANIFEST,
-			subresourceIntegrityManifest: ${
-				sriEnabled ? 'self.__SUBRESOURCE_INTEGRITY_MANIFEST' : 'undefined'
-			},
-			fontLoaderManifest: ${
-				hasFontLoaders ? 'self.__FONT_LOADER_MANIFEST' : 'undefined'
-			},
 			Document: ${
 				stringifiedDocumentPath
 					? `require(${stringifiedDocumentPath}).default`
 					: 'undefined'
 			},
 			appMod: ${stringifiedAppPath ? `require(${stringifiedAppPath})` : 'undefined'},
-			buildId: ${JSON.stringify(buildId)},
 			pagesOptions: {${Object.entries(pageConfigs)
 				.map(([k, v]) => `"${k}": ${v}`)
 				.join(',')}},
-			serverComponentManifest: ${
-				hasServerComponent ? 'self.__RSC_MANIFEST' : 'undefined'
-			},
-			serverCSSManifest: ${
-				hasServerComponent ? 'self.__RSC_CSS_MANIFEST' : 'undefined'
-			},
 		}
 	`;
 }

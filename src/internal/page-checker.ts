@@ -2,7 +2,6 @@ import {PagesManifest} from 'next/dist/build/webpack/plugins/pages-manifest-plug
 import {NextConfigComplete} from 'next/dist/server/config-shared';
 import {normalizeLocalePath} from 'next/dist/shared/lib/i18n/normalize-locale-path';
 import {denormalizePagePath} from 'next/dist/shared/lib/page-path/denormalize-page-path';
-import {PageNotFoundError} from 'next/dist/shared/lib/utils';
 import {normalizePagePath} from 'next/dist/shared/lib/page-path/normalize-page-path';
 import {ManifestProvider} from './manifest-provider';
 

@@ -1,24 +1,23 @@
-// eslint-disable-next-line unicorn/prefer-node-protocol
-import path from 'path';
+import path from 'node:path';
 import {stringify} from 'node:querystring';
 import type {NextConfig} from 'next';
 import {
+	APP_PATHS_MANIFEST,
 	COMPILER_NAMES,
 	FLIGHT_MANIFEST,
 	FLIGHT_SERVER_CSS_MANIFEST,
 	FONT_LOADER_MANIFEST,
+	FONT_MANIFEST,
 	MIDDLEWARE_BUILD_MANIFEST,
+	MIDDLEWARE_MANIFEST,
 	MIDDLEWARE_REACT_LOADABLE_MANIFEST,
-	REACT_LOADABLE_MANIFEST,
+	PAGES_MANIFEST,
+	PRERENDER_MANIFEST,
+	ROUTES_MANIFEST,
 	SUBRESOURCE_INTEGRITY_MANIFEST,
 } from 'next/dist/shared/lib/constants';
-import {
-	Compiler,
-	Configuration,
-	DefinePlugin,
-	sources,
-	WebpackError,
-} from 'webpack';
+import {Compiler, Configuration, DefinePlugin, sources} from 'webpack';
+import {WEBPACK_LAYERS} from 'next/dist/lib/constants';
 import {Options} from './loaders/ignext-server-loader';
 
 export function withIgnext(nextConfig: NextConfig): NextConfig {
@@ -48,6 +47,8 @@ function updateEdgeWebpackConfig(config: Configuration) {
 		new DefinePlugin({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			'process.env.NEXT_PRIVATE_MINIMAL_MODE': JSON.stringify('0'),
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			'process.env.NODE_DEBUG': JSON.stringify('0'),
 		}),
 	);
 
@@ -60,6 +61,7 @@ function updateEdgeWebpackConfig(config: Configuration) {
 	config.optimization = {
 		...config.optimization,
 		splitChunks: false,
+		minimize: false,
 	};
 
 	config.output = {
@@ -117,7 +119,7 @@ class IgnextPlugin {
 				}
 			}
 
-			entry['.ignext/[[path]]'] = {
+			entry['.ignext/handler'] = {
 				import: [`ignext-server-loader?${stringify({...serverQuery})}!`],
 				library: {
 					type: 'module',
@@ -129,97 +131,133 @@ class IgnextPlugin {
 			return undefined as unknown as boolean;
 		});
 
-		compiler.hooks.thisCompilation.tap(this.constructor.name, (compilation) => {
-			compilation.hooks.processAssets.tap(
-				{
-					name: this.constructor.name,
-					// Ideally, we should use PROCESS_ASSETS_STAGE_ADDITIONS to add
-					// this meta information. But Next.js generate this information
-					// in PROCESS_ASSETS_STAGE_ADDITIONS stage while it should use
-					// PROCESS_ASSETS_STAGE_DERIVED.
-					// TODO: Fix this at Next.js side.
-					stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE,
-				},
-				(assets) => {
-					function findAsset(
-						name: string,
-					): [string, sources.Source] | undefined {
-						return Object.entries(assets).find(([k]) => {
-							console.log(k);
-							return k.includes(name);
-						});
-					}
+		// Compiler.hooks.thisCompilation.tap(this.constructor.name, (compilation) => {
+		// 	compilation.hooks.processAssets.tap(
+		// 		{
+		// 			name: this.constructor.name,
+		// 			// Ideally, we should use PROCESS_ASSETS_STAGE_ADDITIONS to add
+		// 			// this meta information. But Next.js generate this information
+		// 			// in PROCESS_ASSETS_STAGE_ADDITIONS stage while it should use
+		// 			// PROCESS_ASSETS_STAGE_DERIVED.
+		// 			// TODO: Fix this at Next.js side.
+		// 			stage: compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE,
+		// 		},
+		// 		(assets) => {
+		// 			function findAsset(
+		// 				name: string,
+		// 			): [string, sources.Source] | undefined {
+		// 				console.log(assets);
+		// 				return Object.entries(assets).find(([k]) => {
+		// 					return k.includes(name);
+		// 				});
+		// 			}
 
-					function loadAsset(
-						name: string,
-						required: boolean,
-						variable?: string,
-					): sources.Source {
-						const result = findAsset(name);
-						if (!result) {
-							if (required) {
-								compilation.errors.push(
-									new compiler.webpack.WebpackError(
-										`Failed to get asset ${name}`,
-									),
-								);
-							}
+		// 			function loadAsset(
+		// 				name: string,
+		// 				required: boolean,
+		// 				variable?: string,
+		// 			): sources.Source {
+		// 				const result = findAsset(name);
+		// 				if (!result) {
+		// 					if (required) {
+		// 						compilation.errors.push(
+		// 							new compiler.webpack.WebpackError(
+		// 								`Failed to get asset ${name}`,
+		// 							),
+		// 						);
+		// 					}
 
-							return new sources.RawSource('');
-						}
+		// 					return new sources.RawSource('');
+		// 				}
 
-						if (variable) {
-							return new sources.ConcatSource(
-								`self.${variable}=`,
-								result[1],
-								'\n',
-							);
-						}
+		// 				if (variable) {
+		// 					return new sources.ConcatSource(
+		// 						`self.${variable}=`,
+		// 						result[1],
+		// 						'\n',
+		// 					);
+		// 				}
 
-						return result[1];
-					}
+		// 				return result[1];
+		// 			}
 
-					const [serverName, serverSource] = findAsset('.ignext/[[path]]')!;
-					const reactLoadableManifestSource = loadAsset(
-						MIDDLEWARE_REACT_LOADABLE_MANIFEST + '.js',
-						false,
-					);
-					const buildManifestSource = loadAsset(
-						MIDDLEWARE_BUILD_MANIFEST + '.js',
-						false,
-					);
-					const subresourceIntegrityManifestSource = loadAsset(
-						SUBRESOURCE_INTEGRITY_MANIFEST + '.js',
-						false,
-					);
-					const fontLoaderManifestSource = loadAsset(
-						FONT_LOADER_MANIFEST + '.js',
-						false,
-					);
-					const serverComponentManifestSource = loadAsset(
-						FLIGHT_MANIFEST + '.js',
-						false,
-					);
-					// eslint-disable-next-line @typescript-eslint/naming-convention
-					const serverCSSManifestSource = loadAsset(
-						FLIGHT_SERVER_CSS_MANIFEST + '.js',
-						false,
-					);
+		// 			const [serverName, serverSource] = findAsset('.ignext/handler')!;
+		// 			const reactLoadableManifestSource = loadAsset(
+		// 				MIDDLEWARE_REACT_LOADABLE_MANIFEST + '.js',
+		// 				false,
+		// 			);
+		// 			const buildManifestSource = loadAsset(
+		// 				MIDDLEWARE_BUILD_MANIFEST + '.js',
+		// 				false,
+		// 			);
+		// 			const subresourceIntegrityManifestSource = loadAsset(
+		// 				SUBRESOURCE_INTEGRITY_MANIFEST + '.js',
+		// 				false,
+		// 			);
+		// 			const fontLoaderManifestSource = loadAsset(
+		// 				FONT_LOADER_MANIFEST + '.js',
+		// 				false,
+		// 			);
+		// 			const serverComponentManifestSource = loadAsset(
+		// 				FLIGHT_MANIFEST + '.js',
+		// 				false,
+		// 			);
+		// 			// eslint-disable-next-line @typescript-eslint/naming-convention
+		// 			const serverCSSManifestSource = loadAsset(
+		// 				FLIGHT_SERVER_CSS_MANIFEST + '.js',
+		// 				false,
+		// 			);
+		// 			const prerenderManifestSource = loadAsset(
+		// 				PRERENDER_MANIFEST,
+		// 				false,
+		// 				'__PRERENDER_MANIFEST',
+		// 			);
+		// 			const pagesManifestSource = loadAsset(
+		// 				PAGES_MANIFEST,
+		// 				false,
+		// 				'__PAGES_MANIFEST',
+		// 			);
+		// 			const appPathsManifestSource = loadAsset(
+		// 				APP_PATHS_MANIFEST,
+		// 				false,
+		// 				'__APP_PATHS_MANIFEST',
+		// 			);
+		// 			const routesManifestSource = loadAsset(
+		// 				ROUTES_MANIFEST,
+		// 				false,
+		// 				'__ROUTES_MANIFEST',
+		// 			);
+		// 			const fontManifestSource = loadAsset(
+		// 				FONT_MANIFEST,
+		// 				false,
+		// 				'__FONT_MANIFEST',
+		// 			);
+		// 			const middlewareManifestSource = loadAsset(
+		// 				MIDDLEWARE_MANIFEST,
+		// 				false,
+		// 				'__MIDDLEWARE_MANIFEST',
+		// 			);
 
-					compilation.updateAsset(
-						serverName,
-						new sources.ConcatSource(
-							reactLoadableManifestSource,
-							buildManifestSource,
-							subresourceIntegrityManifestSource,
-							fontLoaderManifestSource,
-							serverComponentManifestSource,
-							serverCSSManifestSource,
-							serverSource,
-						),
-					);
-				},
-			);
-		});
+		// 			compilation.updateAsset(
+		// 				serverName,
+		// 				new sources.ConcatSource(
+		// 					reactLoadableManifestSource,
+		// 					buildManifestSource,
+		// 					subresourceIntegrityManifestSource,
+		// 					fontLoaderManifestSource,
+		// 					serverComponentManifestSource,
+		// 					serverCSSManifestSource,
+		// 					prerenderManifestSource,
+		// 					pagesManifestSource,
+		// 					appPathsManifestSource,
+		// 					routesManifestSource,
+		// 					fontManifestSource,
+		// 					middlewareManifestSource,
+		// 					serverSource,
+		// 				),
+		// 			);
+		// 		},
+		// 	);
+		// });
 	}
 }

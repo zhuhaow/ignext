@@ -1,12 +1,21 @@
+import {existsSync, writeFileSync} from 'node:fs';
 import {access} from 'node:fs/promises';
-import path, {basename, dirname, normalize, relative} from 'node:path';
-import {copy, emptyDir, ensureDir, PathLike, readFile} from 'fs-extra';
+import path, {basename, dirname, join, normalize, relative} from 'node:path';
+import {
+	copy,
+	emptyDir,
+	ensureDir,
+	ensureDirSync,
+	PathLike,
+	readFile,
+} from 'fs-extra';
 import klaw from 'klaw';
 import {BUILD_ID_FILE} from 'next/constants';
+import {camelCase} from 'change-case';
 
-export async function export_(nextDir: PathLike, outputDir: PathLike) {
+export async function export_(nextDir: PathLike) {
 	nextDir = normalize(resolve(nextDir.toString()));
-	outputDir = normalize(resolve(outputDir.toString()));
+	const outputDir = normalize(resolve(join(nextDir, '.ignext')));
 
 	try {
 		await access(resolve(nextDir, '.next'));
@@ -22,7 +31,7 @@ export async function export_(nextDir: PathLike, outputDir: PathLike) {
 
 	await copyStaticBuiltPages(nextDir, outputDir);
 
-	await copyHandler(nextDir, outputDir);
+	await buildHandler(nextDir, outputDir);
 }
 
 async function copyStaticAssets(nextDir: PathLike, outputDir: PathLike) {
@@ -81,9 +90,54 @@ async function buildId(nextDir: PathLike) {
 	return readFile(resolve(nextDir, '.next', BUILD_ID_FILE), 'utf8');
 }
 
-async function copyHandler(nextDir: PathLike, outputDir: PathLike) {
-	await copy(
-		resolve(nextDir, '.next', 'server', 'ignext', '[[path]].js'),
-		resolve(outputDir, 'functions', '[[path]].js'),
-	);
+async function buildHandler(nextDir: PathLike, outputDir: PathLike) {
+	function getVariableName(path: string): string {
+		return camelCase(basename(path.toString(), '.json'));
+	}
+
+	function generateImport(path: PathLike): string {
+		if (!existsSync(resolve(nextDir, '.next', path))) {
+			return '';
+		}
+
+		const variableName = getVariableName(path.toString());
+
+		return `
+			import ${variableName} from "${resolve(nextDir, '.next', path)}";
+		`;
+	}
+
+	const buildId = await readFile(resolve(nextDir, '.next', 'BUILD_ID'), 'utf8');
+
+	const manifestList = [
+		'build-manifest.json',
+		'prerender-manifest.json',
+		'react-loadable-manifest.json',
+		'routes-manifest.json',
+		'server/middleware-manifest.json',
+		'server/pages-manifest.json',
+		'server/font-manifest.json',
+	];
+
+	const handlerSource = `
+		${manifestList.map((manifest) => generateImport(manifest)).join('\n')}\n
+
+		const MANIFESTS = {
+			buildId: ${JSON.stringify(buildId)},
+			${manifestList.map((manifest) => getVariableName(manifest)).join(',\n')}
+		};
+
+		import {createOnRequestHandler} from "${resolve(
+			nextDir,
+			'.next',
+			'server',
+			'.ignext',
+			'handler.js',
+		)}";
+
+		export const onRequest = createOnRequestHandler(MANIFESTS);
+	`;
+
+	ensureDirSync(resolve(outputDir, 'functions'));
+	writeFileSync(resolve(outputDir, 'functions', '[[path]].js'), handlerSource);
 }

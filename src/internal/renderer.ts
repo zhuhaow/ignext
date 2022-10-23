@@ -2,17 +2,21 @@
 /* eslint-disable unicorn/prefer-node-protocol */
 import type {UrlWithParsedQuery} from 'url';
 import {format as formatUrl, parse as parseUrl} from 'url';
-import {NextConfig} from 'next';
 import * as Log from 'next/dist/build/output/log';
 import {getProperError} from 'next/dist/lib/is-error';
 import {getRedirectStatus} from 'next/dist/lib/redirect-status';
 import {checkIsManualRevalidate} from 'next/dist/server/api-utils';
+import {byteLength} from 'next/dist/server/api-utils/web';
+import {renderToHTMLOrFlight} from 'next/dist/server/app-render';
 import {BaseNextRequest, BaseNextResponse} from 'next/dist/server/base-http';
+import {WebNextResponse} from 'next/dist/server/base-http/web';
 import BaseServer, {
 	FindComponentsResult,
 	NoFallbackError,
 	RequestContext,
 } from 'next/dist/server/base-server';
+import {NextConfigComplete} from 'next/dist/server/config-shared';
+import {generateETag} from 'next/dist/server/lib/etag';
 import {LoadComponentsReturnType} from 'next/dist/server/load-components';
 import {RenderOpts, renderToHTML} from 'next/dist/server/render';
 import RenderResult from 'next/dist/server/render-result';
@@ -26,6 +30,7 @@ import {
 	ResponseCacheEntry,
 	ResponseCacheValue,
 } from 'next/dist/server/response-cache';
+import {DynamicRoutes} from 'next/dist/server/router';
 import {
 	PayloadOptions,
 	setRevalidateHeaders,
@@ -38,9 +43,11 @@ import {
 } from 'next/dist/shared/lib/constants';
 import {normalizeLocalePath} from 'next/dist/shared/lib/i18n/normalize-locale-path';
 import {denormalizePagePath} from 'next/dist/shared/lib/page-path/denormalize-page-path';
+import {normalizeAppPath} from 'next/dist/shared/lib/router/utils/app-paths';
 import escapePathDelimiters from 'next/dist/shared/lib/router/utils/escape-path-delimiters';
 import {isDynamicRoute} from 'next/dist/shared/lib/router/utils/is-dynamic';
 import {removeTrailingSlash} from 'next/dist/shared/lib/router/utils/remove-trailing-slash';
+import {Params} from 'next/dist/shared/lib/router/utils/route-matcher';
 import {
 	DecodeError,
 	execOnce,
@@ -48,14 +55,6 @@ import {
 	NormalizeError,
 	normalizeRepeatedSlashes,
 } from 'next/dist/shared/lib/utils';
-import {DynamicRoutes} from 'next/dist/server/router';
-import {normalizeAppPath} from 'next/dist/shared/lib/router/utils/app-paths';
-import {Params} from 'next/dist/shared/lib/router/utils/route-matcher';
-import {generateETag} from 'next/dist/server/lib/etag';
-import {byteLength} from 'next/dist/server/api-utils/web';
-import {WebNextResponse} from 'next/dist/server/base-http/web';
-import {renderToHTMLOrFlight} from 'next/dist/server/app-render';
-import {NextConfigComplete} from 'next/dist/server/config-shared';
 import {Logger} from './logger';
 import {ManifestProvider} from './manifest-provider';
 import {PageChecker} from './page-checker';

@@ -1,5 +1,6 @@
-import {ParsedUrlQuery} from 'node:querystring';
-import {UrlWithParsedQuery} from 'node:url';
+/* eslint-disable unicorn/prefer-node-protocol */
+import {ParsedUrlQuery} from 'querystring';
+import {UrlWithParsedQuery} from 'url';
 import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plugin';
 import isError, {getProperError} from 'next/dist/lib/is-error';
 import {CustomRoutes, Rewrite} from 'next/dist/lib/load-custom-routes';
@@ -8,7 +9,7 @@ import BaseServer, {
 	MiddlewareRoutingItem,
 	NoFallbackError,
 } from 'next/dist/server/base-server';
-import type {NextConfig} from 'next/dist/server/config-shared';
+import type {NextConfigComplete} from 'next/dist/server/config-shared';
 import {addRequestMeta, getRequestMeta} from 'next/dist/server/request-meta';
 import Router, {DynamicRoutes, Route} from 'next/dist/server/router';
 import {
@@ -40,13 +41,15 @@ import {PageChecker} from './page-checker';
 import {Renderer} from './renderer';
 
 export abstract class RouterBuilder {
-	protected readonly router: Router;
-
-	constructor() {
-		this.router = new Router(this.build());
-	}
+	protected router: Router | undefined;
 
 	public getRouter(): Router {
+		if (this.router) {
+			return this.router;
+		}
+
+		this.router = new Router(this.build());
+
 		return this.router;
 	}
 
@@ -57,7 +60,7 @@ export class IgnextRouterBuilder extends RouterBuilder {
 	// eslint-disable-next-line max-params
 	constructor(
 		private readonly manifestProvider: ManifestProvider,
-		private readonly nextConfig: NextConfig,
+		private readonly nextConfig: NextConfigComplete,
 		private readonly renderer: Renderer,
 		private readonly customRoutes: CustomRoutes,
 		private readonly dynamicRoutes: DynamicRoutes,

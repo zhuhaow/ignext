@@ -10,7 +10,7 @@
     "build:bin": "esbuild --bundle --platform=node --outfile=dist/bin.js src/command/bin.ts",
     "build:plugin": "esbuild --bundle --platform=node --external:webpack --outfile=dist/plugin.js src/plugin.ts",
     "build:loader": "esbuild --bundle --platform=node --external:webpack --external:next --outfile=dist/loaders/ignext-server-loader.js src/loaders/ignext-server-loader.ts",
-    "build:server": "esbuild --bundle --external:next --format=esm --outfile=dist/internal/server.js src/internal/server.ts && sed -i .bak -e 's/next\\/dist\\//next\\/dist\\/esm\\//g' dist/internal/server.js",
+    "build:adapter": "esbuild --bundle --sourcemap --external:next --external:url --external:querystring --format=esm --outfile=dist/internal/adapter.js src/internal/adapter.ts && sed -i .bak -e 's/next\\/dist\\//next\\/dist\\/esm\\//g' dist/internal/adapter.js",
     "build": "rimraf dist && mkdir dist && run-p build:*",
     "typecheck": "tsc",
     "lint": "xo",
@@ -68,6 +68,7 @@
   "dependencies": {
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
+    "change-case": "^4.1.2",
     "next": "^12.3.2-canary.32",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
