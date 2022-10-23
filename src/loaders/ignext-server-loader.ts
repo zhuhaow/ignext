@@ -2,12 +2,12 @@
 import {Buffer} from 'buffer';
 import path from 'path';
 import {parse} from 'querystring';
-import type {LoaderContext} from 'webpack';
-import type {EdgeSSRLoaderQuery} from 'next/dist/build/webpack/loaders/next-edge-ssr-loader';
+import toArray from 'lodash-es/toArray';
 import type {EdgeFunctionLoaderOptions} from 'next/dist/build/webpack/loaders/next-edge-function-loader';
+import type {EdgeSSRLoaderQuery} from 'next/dist/build/webpack/loaders/next-edge-ssr-loader';
 import type {MiddlewareLoaderOptions} from 'next/dist/build/webpack/loaders/next-middleware-loader';
 import {stringifyRequest} from 'next/dist/build/webpack/stringify-request';
-import toArray from 'lodash-es/toArray';
+import type {LoaderContext} from 'webpack';
 
 export interface Options {
 	pageQueries?: string[];
@@ -64,6 +64,7 @@ function buildHandlerOptions(
 		absoluteAppPath,
 		absolute500Path,
 		absoluteErrorPath,
+		pagesType,
 	} = loaderOptions.pageQueries[0];
 
 	const stringifyPath = (path?: string) => {
@@ -79,12 +80,22 @@ function buildHandlerOptions(
 
 	const pageConfigs: Record<string, string> = {};
 
+	function pageConfigSource(
+		stringfiedPath: string,
+		isAppPath: boolean,
+	): string {
+		return `{
+			pageMod: require(${stringfiedPath}),
+			isAppPath: ${JSON.stringify(isAppPath)}
+		}`;
+	}
+
 	if (stringifiedErrorPath) {
-		pageConfigs['/_error'] = `require(${stringifiedErrorPath})`;
+		pageConfigs['/_error'] = pageConfigSource(stringifiedErrorPath, false);
 	}
 
 	if (stringified500Path) {
-		pageConfigs['/500'] = `require(${stringified500Path})`;
+		pageConfigs['/500'] = pageConfigSource(stringified500Path, false);
 	}
 
 	for (const value of loaderOptions.pageQueries) {
@@ -97,7 +108,10 @@ function buildHandlerOptions(
 			1,
 			-1,
 		)}`;
-		pageConfigs[value.page] = `require(${JSON.stringify(pageModPath)})`;
+		pageConfigs[value.page] = pageConfigSource(
+			JSON.stringify(pageModPath),
+			value.pagesType === 'app',
+		);
 	}
 
 	return `

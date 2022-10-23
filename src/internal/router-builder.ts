@@ -41,7 +41,7 @@ import {PageChecker} from './page-checker';
 import {Renderer} from './renderer';
 
 export abstract class RouterBuilder {
-	protected router: Router | undefined;
+	protected router!: Router;
 
 	public getRouter(): Router {
 		if (this.router) {

@@ -31,7 +31,7 @@ export function adapter(options: IgnextHandlerOptions) {
 			const pageOptions = options.pagesOptions[pathname];
 
 			if (!pageOptions) {
-				throw new Error(`Cannot find render settings for ${pathname}`);
+				return undefined;
 			}
 
 			// Some fields should be optional but marked as required in Next.js.
