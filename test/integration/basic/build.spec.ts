@@ -22,11 +22,15 @@ beforeAll(async () => {
 	await waitOn({resources: ['tcp:localhost:' + wranglerPort.toString()]});
 });
 
-test('No op test', async () => {
+// Use this to keep the server running for debugging
+test.skip('Blocking test', async () => {
+	// eslint-disable-next-line no-promise-executor-return
+	await new Promise((resolve) => setTimeout(resolve, 10_000_000));
+
 	expect(true);
 });
 
-test.skip('test API', async () => {
+test('test API', async () => {
 	const response = await fetch(getHost() + '/api/hello');
 	expect(await response.text()).toBe('Hello World');
 });

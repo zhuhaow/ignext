@@ -516,7 +516,6 @@ export class IgnextRouterBuilder extends RouterBuilder {
 		parameters: Params | undefined,
 		page: string,
 	): Promise<boolean> {
-		// TODO: This is not working though it should. We never got the response back.
 		const func = await this.loadFunction(page);
 		if (!func) {
 			return false;
@@ -590,8 +589,10 @@ export class IgnextRouterBuilder extends RouterBuilder {
 		});
 
 		if (result.response.body) {
-			result.response.body.pipeThrough(res.transformStream.writable);
+			result.response.body.pipeThrough(res.transformStream);
 		}
+
+		res.send();
 
 		return true;
 	}
