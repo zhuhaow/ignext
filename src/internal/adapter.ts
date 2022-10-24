@@ -85,15 +85,21 @@ export function adapter(options: IgnextHandlerOptions) {
 // From https://developers.cloudflare.com/fundamentals/get-started/reference/http-request-headers/
 // and https://developers.cloudflare.com/workers/runtime-apis/request/#incomingrequestcfproperties
 function transformRequest(request: Request, nextConfig: NextConfigComplete) {
+	const {cf} = request;
+	const geo =
+		cf && 'country' in cf && cf.country !== 'T1'
+			? {
+					country: cf.country,
+					city: cf.city,
+					region: cf.region,
+					latitude: cf.latitude,
+					longitude: cf.longitude,
+			  }
+			: {};
+
 	Object.assign(request, {
 		ip: request.headers.get('CF-Connecting-IP') ?? undefined,
-		geo: {
-			country: request.cf?.country,
-			city: request.cf?.city,
-			region: request.cf?.region,
-			latitude: request.cf?.latitude,
-			longitude: request.cf?.longitude,
-		},
+		geo,
 		nextConfig,
 	});
 }

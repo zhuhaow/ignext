@@ -1,5 +1,6 @@
 import type {NextPage} from 'next';
 import Head from 'next/head';
+import Link from 'next/link';
 
 const Home: NextPage = () => (
 	<>
@@ -10,6 +11,7 @@ const Home: NextPage = () => (
 
 		<main>
 			<h2>This is /</h2>
+			<Link href={{pathname: '/dynamicpages/test'}}>/dynamicpages/test</Link>
 		</main>
 	</>
 );

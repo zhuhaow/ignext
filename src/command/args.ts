@@ -15,7 +15,7 @@ program
 	.description('turn the result of next build into a Cloudflare Pages site')
 	.argument('[next_path]', 'the path to the Next.js website', '.')
 	.action(async (nextPath) => {
-		await export_(nextPath, join(nextPath, '.ignext'));
+		await export_(nextPath);
 	});
 
 export {program};

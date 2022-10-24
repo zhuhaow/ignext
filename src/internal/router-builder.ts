@@ -504,7 +504,7 @@ export class IgnextRouterBuilder extends RouterBuilder {
 			return false;
 		}
 
-		return this.runApi(request, res, query, parameters, page);
+		return this.runApi(request, res as any, query, parameters, page);
 	}
 
 	// eslint-disable-next-line max-params
@@ -579,7 +579,7 @@ export class IgnextRouterBuilder extends RouterBuilder {
 		res.statusMessage = result.response.statusText;
 
 		// eslint-disable-next-line unicorn/no-array-for-each
-		result.response.headers.forEach((value: string, key) => {
+		result.response.headers.forEach((value: string, key: string) => {
 			// The append handling is special cased for `set-cookie`
 			if (key.toLowerCase() === 'set-cookie') {
 				res.setHeader(key, value);
@@ -735,8 +735,7 @@ export class IgnextRouterBuilder extends RouterBuilder {
 						if (
 							parsedDestination.protocol &&
 							(parsedDestination.port
-								? // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-								  `${parsedDestination.hostname}:${parsedDestination.port}`
+								? `${parsedDestination.hostname}:${parsedDestination.port}`
 								: parsedDestination.hostname) !== request.headers.host
 						) {
 							throw new Error("Doesn't support proxy request yet");

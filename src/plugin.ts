@@ -74,7 +74,9 @@ class IgnextPlugin {
 			const imports = Object.values(entry).flatMap((c) => {
 				return c.import ?? [];
 			});
-			const serverQuery: Options = {pageQueries: [], functionQueries: []};
+			const pageQueries = [];
+			const functionQueries = [];
+			let middlewareQuery;
 			const pattern = /([^?]+)\?(.+)!$/;
 			for (const im of imports) {
 				const match = pattern.exec(im);
@@ -84,17 +86,17 @@ class IgnextPlugin {
 
 				switch (match[1]) {
 					case 'next-edge-ssr-loader': {
-						serverQuery.pageQueries!.push(match[2]);
+						pageQueries.push(match[2]);
 						break;
 					}
 
 					case 'next-edge-function-loader': {
-						serverQuery.functionQueries!.push(match[2]);
+						functionQueries.push(match[2]);
 						break;
 					}
 
 					case 'next-middleware-loader': {
-						serverQuery.middlewareQuery = match[2];
+						middlewareQuery = match[2];
 						break;
 					}
 
@@ -105,7 +107,13 @@ class IgnextPlugin {
 			}
 
 			entry['.ignext/handler'] = {
-				import: [`ignext-server-loader?${stringify({...serverQuery})}!`],
+				import: [
+					`ignext-server-loader?${stringify({
+						pageQueries,
+						functionQueries,
+						middlewareQuery,
+					})}!`,
+				],
 				library: {
 					type: 'module',
 				},
