@@ -735,7 +735,8 @@ export class IgnextRouterBuilder extends RouterBuilder {
 						if (
 							parsedDestination.protocol &&
 							(parsedDestination.port
-								? `${parsedDestination.hostname}:${parsedDestination.port}`
+								? // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+								  `${parsedDestination.hostname}:${parsedDestination.port}`
 								: parsedDestination.hostname) !== request.headers.host
 						) {
 							throw new Error("Doesn't support proxy request yet");
