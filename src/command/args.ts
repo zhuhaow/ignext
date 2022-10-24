@@ -1,4 +1,3 @@
-import {join} from 'node:path';
 import {Command} from 'commander';
 import {version} from '../../package.json';
 import {export_} from './export';

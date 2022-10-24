@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/prefer-node-protocol */
+import {parse as parseQs} from 'querystring';
 // eslint-disable-next-line n/no-deprecated-api
 import {format as formatUrl, parse as parseUrl, UrlWithParsedQuery} from 'url';
-import {parse as parseQs} from 'querystring';
 import {getProperError} from 'next/dist/lib/is-error';
 import {CustomRoutes} from 'next/dist/lib/load-custom-routes';
 import {getCookieParser, setLazyProp} from 'next/dist/server/api-utils';

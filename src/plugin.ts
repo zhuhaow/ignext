@@ -3,7 +3,6 @@ import {stringify} from 'node:querystring';
 import type {NextConfig} from 'next';
 import {COMPILER_NAMES} from 'next/dist/shared/lib/constants';
 import {Compiler, Configuration, DefinePlugin} from 'webpack';
-import {Options} from './loaders/ignext-server-loader';
 
 export function withIgnext(nextConfig: NextConfig): NextConfig {
 	const oldWebpackWrapper = nextConfig.webpack;

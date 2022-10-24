@@ -5,10 +5,12 @@ import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plu
 import isError, {getProperError} from 'next/dist/lib/is-error';
 import {CustomRoutes, Rewrite} from 'next/dist/lib/load-custom-routes';
 import {BaseNextRequest, BaseNextResponse} from 'next/dist/server/base-http';
+import {WebNextResponse} from 'next/dist/server/base-http/web';
 import BaseServer, {
 	MiddlewareRoutingItem,
 	NoFallbackError,
 } from 'next/dist/server/base-server';
+import {requestToBodyStream} from 'next/dist/server/body-streams';
 import type {NextConfigComplete} from 'next/dist/server/config-shared';
 import {addRequestMeta, getRequestMeta} from 'next/dist/server/request-meta';
 import Router, {DynamicRoutes, Route} from 'next/dist/server/router';
@@ -17,6 +19,7 @@ import {
 	createRedirectRoute,
 	getCustomRoute,
 } from 'next/dist/server/server-route-utils';
+import {adapter} from 'next/dist/server/web/adapter';
 import {FetchEventResult, NextMiddleware} from 'next/dist/server/web/types';
 import {toNodeHeaders} from 'next/dist/server/web/utils';
 import {CLIENT_STATIC_FILES_RUNTIME} from 'next/dist/shared/lib/constants';
@@ -32,14 +35,11 @@ import {
 import {ParsedUrl, parseUrl} from 'next/dist/shared/lib/router/utils/parse-url';
 import {getPathMatch} from 'next/dist/shared/lib/router/utils/path-match';
 import {prepareDestination} from 'next/dist/shared/lib/router/utils/prepare-destination';
+import {urlQueryToSearchParams} from 'next/dist/shared/lib/router/utils/querystring';
 import {relativizeURL} from 'next/dist/shared/lib/router/utils/relativize-url';
 import {removeTrailingSlash} from 'next/dist/shared/lib/router/utils/remove-trailing-slash';
 import {DecodeError} from 'next/dist/shared/lib/utils';
-import {NextRequest, NextResponse} from 'next/server';
-import {adapter} from 'next/dist/server/web/adapter';
-import {WebNextResponse} from 'next/dist/server/base-http/web';
-import {urlQueryToSearchParams} from 'next/dist/shared/lib/router/utils/querystring';
-import {requestToBodyStream} from 'next/dist/server/body-streams';
+import {NextResponse} from 'next/server';
 import {ManifestProvider} from './manifest-provider';
 import {PageChecker} from './page-checker';
 import {Renderer} from './renderer';
