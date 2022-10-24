@@ -17,7 +17,7 @@ import {
 	createRedirectRoute,
 	getCustomRoute,
 } from 'next/dist/server/server-route-utils';
-import {FetchEventResult} from 'next/dist/server/web/types';
+import {FetchEventResult, NextMiddleware} from 'next/dist/server/web/types';
 import {toNodeHeaders} from 'next/dist/server/web/utils';
 import {CLIENT_STATIC_FILES_RUNTIME} from 'next/dist/shared/lib/constants';
 import {detectDomainLocale} from 'next/dist/shared/lib/i18n/detect-domain-locale';
@@ -35,7 +35,11 @@ import {prepareDestination} from 'next/dist/shared/lib/router/utils/prepare-dest
 import {relativizeURL} from 'next/dist/shared/lib/router/utils/relativize-url';
 import {removeTrailingSlash} from 'next/dist/shared/lib/router/utils/remove-trailing-slash';
 import {DecodeError} from 'next/dist/shared/lib/utils';
-import {NextResponse} from 'next/server';
+import {NextRequest, NextResponse} from 'next/server';
+import {adapter} from 'next/dist/server/web/adapter';
+import {WebNextResponse} from 'next/dist/server/base-http/web';
+import {urlQueryToSearchParams} from 'next/dist/shared/lib/router/utils/querystring';
+import {requestToBodyStream} from 'next/dist/server/body-streams';
 import {ManifestProvider} from './manifest-provider';
 import {PageChecker} from './page-checker';
 import {Renderer} from './renderer';
@@ -65,6 +69,9 @@ export class IgnextRouterBuilder extends RouterBuilder {
 		private readonly customRoutes: CustomRoutes,
 		private readonly dynamicRoutes: DynamicRoutes,
 		private readonly pageChecker: PageChecker,
+		private readonly loadFunction: (
+			pathname: string,
+		) => Promise<NextMiddleware | undefined>,
 	) {
 		super();
 	}
@@ -504,14 +511,89 @@ export class IgnextRouterBuilder extends RouterBuilder {
 	protected async runApi(
 		request: BaseNextRequest,
 		// eslint-disable-next-line unicorn/prevent-abbreviations
-		res: BaseNextResponse,
+		res: WebNextResponse,
 		query: ParsedUrlQuery,
 		parameters: Params | undefined,
 		page: string,
 	): Promise<boolean> {
-		// TODO: Handle API
+		// TODO: This is not working though it should. We never got the response back.
+		const func = await this.loadFunction(page);
+		if (!func) {
+			return false;
+		}
 
-		return false;
+		// For edge to "fetch" we must always provide an absolute URL
+		const isDataRequest = Boolean(query.__nextDataReq);
+		const initialUrl = new URL(
+			getRequestMeta(request, '__NEXT_INIT_URL') ?? '/',
+			'http://n',
+		);
+		const queryString = urlQueryToSearchParams({
+			...Object.fromEntries(initialUrl.searchParams),
+			...query,
+			...parameters,
+		}).toString();
+
+		if (isDataRequest) {
+			request.headers['x-nextjs-data'] = '1';
+		}
+
+		initialUrl.search = queryString;
+		const url = initialUrl.toString();
+
+		if (!url.startsWith('http')) {
+			throw new Error(
+				'To use middleware you must provide a `hostname` and `port` to the Next.js Server',
+			);
+		}
+
+		const cloned = ['HEAD', 'GET'].includes(request.method)
+			? undefined
+			: getRequestMeta(request, '__NEXT_CLONABLE_BODY')?.cloneBodyStream();
+
+		const result = await adapter({
+			handler: func,
+			page,
+			request: {
+				headers: request.headers,
+				method: request.method,
+				nextConfig: {
+					basePath: this.nextConfig.basePath,
+					i18n: this.nextConfig.i18n,
+					trailingSlash: this.nextConfig.trailingSlash,
+				},
+				url,
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				page: {
+					name: page,
+					...(parameters && {params: parameters}),
+				} as any,
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+				body: cloned
+					? // eslint-disable-next-line @typescript-eslint/naming-convention
+					  requestToBodyStream({ReadableStream}, Uint8Array, cloned)
+					: undefined,
+			},
+		});
+
+		res.statusCode = result.response.status;
+		res.statusMessage = result.response.statusText;
+
+		// eslint-disable-next-line unicorn/no-array-for-each
+		result.response.headers.forEach((value: string, key) => {
+			// The append handling is special cased for `set-cookie`
+			if (key.toLowerCase() === 'set-cookie') {
+				res.setHeader(key, value);
+			} else {
+				res.appendHeader(key, value);
+			}
+		});
+
+		if (result.response.body) {
+			result.response.body.pipeThrough(res.transformStream.writable);
+		}
+
+		return true;
 	}
 
 	protected generateCatchAllMiddlewareRoute(): Route[] {

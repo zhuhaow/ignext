@@ -6,7 +6,7 @@ import waitOn from 'wait-on';
 import {export_} from '../../../src/command/export';
 import {nextBuild, wranglerDev} from '../../util';
 
-jest.setTimeout(20_000);
+jest.setTimeout(20_000_000);
 
 let wranglerProcess: ExecaChildProcess | undefined;
 let wranglerPort: number;

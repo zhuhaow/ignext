@@ -2,7 +2,6 @@
 import {Buffer} from 'buffer';
 import path from 'path';
 import {parse} from 'querystring';
-import toArray from 'lodash-es/toArray';
 import type {EdgeFunctionLoaderOptions} from 'next/dist/build/webpack/loaders/next-edge-function-loader';
 import type {EdgeSSRLoaderQuery} from 'next/dist/build/webpack/loaders/next-edge-ssr-loader';
 import type {MiddlewareLoaderOptions} from 'next/dist/build/webpack/loaders/next-middleware-loader';
@@ -10,8 +9,8 @@ import {stringifyRequest} from 'next/dist/build/webpack/stringify-request';
 import type {LoaderContext} from 'webpack';
 
 export interface Options {
-	pageQueries?: string[];
-	functionQueries?: string[];
+	pageQueries?: string[] | string;
+	functionQueries?: string[] | string;
 	middlewareQuery?: string;
 }
 
@@ -21,9 +20,20 @@ interface ParsedOptions {
 	middlewareQuery?: MiddlewareLoaderOptions;
 }
 
+function toArray<T>(value: T | T[] | undefined): T[] {
+	if (!value) {
+		return [];
+	}
+
+	if (Array.isArray(value)) {
+		return value;
+	}
+
+	return [value];
+}
+
 export default function ignextServerLoader(this: LoaderContext<Options>) {
 	const {pageQueries, functionQueries, middlewareQuery} = this.getOptions();
-
 	const options = {
 		pageQueries: toArray(pageQueries).map((q) => parse(q)),
 		functionQueries: toArray(functionQueries).map((q) => parse(q)),
@@ -113,6 +123,14 @@ function buildHandlerOptions(
 		);
 	}
 
+	const functionConfigs: Record<string, string> = {};
+	for (const value of loaderOptions.functionQueries) {
+		functionConfigs[value.page] = `(() => {
+			const mod = require(${stringifyPath(value.absolutePagePath)!});
+			return mod.middleware || mod.default;
+		})()`;
+	}
+
 	return `
 		{
 			dev: ${dev as any as string},
@@ -126,6 +144,9 @@ function buildHandlerOptions(
 			pagesOptions: {${Object.entries(pageConfigs)
 				.map(([k, v]) => `"${k}": ${v}`)
 				.join(',')}},
+			functionOptions: {${Object.entries(functionConfigs)
+				.map(([k, v]) => `"${k}": ${v}`)
+				.join(',')}},	
 		}
 	`;
 }

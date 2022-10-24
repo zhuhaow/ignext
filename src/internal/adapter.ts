@@ -1,6 +1,7 @@
 import {WebNextRequest, WebNextResponse} from 'next/dist/server/base-http/web';
 import {NextConfigComplete} from 'next/dist/server/config-shared';
 import {AppType, DocumentType} from 'next/dist/shared/lib/utils';
+import {NextMiddleware} from 'next/server';
 import {
 	IgnextManifestProvider,
 	IgnextManifestProviderOptions,
@@ -19,6 +20,7 @@ interface IgnextHandlerOptions {
 	Document?: DocumentType;
 	appMod: any;
 	pagesOptions: Partial<Record<string, PageRenderOptions>>;
+	functionOptions: Partial<Record<string, NextMiddleware>>;
 }
 
 export function adapter(options: IgnextHandlerOptions) {
@@ -60,6 +62,9 @@ export function adapter(options: IgnextHandlerOptions) {
 				ComponentMod: pageOptions.pageMod,
 				pathname,
 			};
+		},
+		async loadFunction(pathname: string) {
+			return options.functionOptions[pathname];
 		},
 	});
 

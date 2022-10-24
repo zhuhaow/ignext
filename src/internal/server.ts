@@ -39,6 +39,7 @@ import {
 	NormalizeError,
 	normalizeRepeatedSlashes,
 } from 'next/dist/shared/lib/utils';
+import {NextMiddleware} from 'next/server';
 import {ConsoleLogger, Logger} from './logger';
 import {ManifestProvider} from './manifest-provider';
 import {IgnextPageChecker} from './page-checker';
@@ -51,6 +52,7 @@ interface WebServerOptions {
 	loadComponent: (
 		pathname: string,
 	) => Promise<LoadComponentsReturnType | undefined>;
+	loadFunction: (pathname: string) => Promise<NextMiddleware | undefined>;
 }
 
 export class IgnextServer {
@@ -111,6 +113,9 @@ export class IgnextServer {
 					? this.nextConfig.crossOrigin
 					: undefined,
 				largePageDataBytes: this.nextConfig.experimental.largePageDataBytes,
+				assetPrefix: this.nextConfig.assetPrefix
+					? this.nextConfig.assetPrefix.replace(/\/$/, '')
+					: '',
 			},
 			dynamicRoutes,
 			pageChecker,
@@ -124,6 +129,7 @@ export class IgnextServer {
 			this.getCustomRoutes(),
 			dynamicRoutes,
 			pageChecker,
+			options.loadFunction,
 		);
 	}
 
