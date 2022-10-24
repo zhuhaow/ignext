@@ -7,6 +7,7 @@ import {export_} from '../../../src/command/export';
 import {nextBuild, wranglerDev} from '../../util';
 import {verificationString as staticVerificationString} from './pages/staticpages/[page]';
 import {verificationString as fullyStaticVerificationString} from './pages/staticpages/fully-static';
+import {verificationString as dynamicVerificationString} from './pages/dynamicpages/[page]';
 
 jest.setTimeout(20_000_000);
 
@@ -43,6 +44,11 @@ test('static generated page', async () => {
 		String(getHost() + '/staticpages/fully-static'),
 	);
 	expect(await response2.text()).toContain(fullyStaticVerificationString());
+});
+
+test('dynamic generated page', async () => {
+	const response = await fetch(String(getHost() + '/dynamicpages/test'));
+	expect(await response.text()).toContain(dynamicVerificationString('test'));
 });
 
 afterAll(() => {
