@@ -10,7 +10,7 @@
     "build:bin": "esbuild --bundle --platform=node --outfile=dist/bin.js src/command/bin.ts",
     "build:plugin": "esbuild --bundle --platform=node --external:webpack --outfile=dist/plugin.js src/plugin.ts",
     "build:loader": "esbuild --bundle --platform=node --external:webpack --external:next --outfile=dist/loaders/ignext-server-loader.js src/loaders/ignext-server-loader.ts",
-    "build:adapter": "esbuild --bundle --sourcemap --external:next --external:url --external:querystring --format=esm --outfile=dist/internal/adapter.js src/internal/adapter.ts && sed -i .bak -e 's/next\\/dist\\//next\\/dist\\/esm\\//g' dist/internal/adapter.js",
+    "build:adapter": "esbuild --bundle --sourcemap --external:next --external:url --external:querystring --format=esm --outfile=dist/internal/adapter.js src/internal/adapter.ts && sed -i.bak -e 's/next\\/dist\\//next\\/dist\\/esm\\//g' dist/internal/adapter.js",
     "build": "rimraf dist && mkdir dist && run-p build:*",
     "typecheck:all": "tsc --noEmit",
     "typecheck": "run-p typecheck:*",
