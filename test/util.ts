@@ -11,7 +11,19 @@ export async function nextBuild(dir: string) {
 export function wranglerDev(dir: string, port: number) {
 	const wranglerProcess = execa(
 		path.resolve(__dirname, '../node_modules/.bin/wrangler'),
-		['pages', 'dev', dir, '--port', port.toString()],
+		[
+			'pages',
+			'dev',
+			dir,
+			'--port',
+			port.toString(),
+			'--compatibility-date',
+			'2022-08-16',
+			'--compatibility-flags',
+			'transformstream_enable_standard_constructor',
+			'--compatibility-flags',
+			'streams_enable_constructors',
+		],
 		{
 			cwd: dir,
 		},

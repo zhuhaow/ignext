@@ -115,7 +115,7 @@ function buildHandlerOptions(
 
 	return `
 		{
-			dev: ${JSON.stringify(dev)},
+			dev: ${dev as any as string},
 			config: ${stringifiedConfig},
 			Document: ${
 				stringifiedDocumentPath

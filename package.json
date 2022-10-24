@@ -28,7 +28,7 @@
   "license": "MIT",
   "homepage": "https://github.com/zhuhaow/ignext",
   "devDependencies": {
-    "@cloudflare/workers-types": "^3.17.0",
+    "@cloudflare/workers-types": "^3.18.0",
     "@types/fs-extra": "9.0.13",
     "@types/isomorphic-fetch": "^0.0.36",
     "@types/jest": "28.1.7",
@@ -69,7 +69,7 @@
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
     "change-case": "^4.1.2",
-    "next": "^12.3.2-canary.32",
+    "next": "^12.3.2-canary.38",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "webpack": "^5.74.0"
