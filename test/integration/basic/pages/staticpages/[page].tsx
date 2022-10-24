@@ -19,14 +19,17 @@ export const getStaticPaths: GetStaticPaths = async () => ({
 	fallback: true,
 });
 
+export const verificationString = (page: string) => {
+	return (
+		'This is a page with getStaticProps and getStaticPaths, at /staticpages/' +
+		page
+	);
+};
+
 const Page = ({page}: Props) => (
 	<div>
-		<h1>Page {page}</h1>
+		<h1>{verificationString(page)}</h1>
 	</div>
 );
 
 export default Page;
-
-export const config = {
-	runtime: 'experimental-edge',
-};

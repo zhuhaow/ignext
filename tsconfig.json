@@ -14,7 +14,8 @@
     "resolveJsonModule": true,
     "lib": [
       "ES2020"
-    ]
+    ],
+    "jsx": "react-jsx"
   },
   "include": [
     "**/*.ts",

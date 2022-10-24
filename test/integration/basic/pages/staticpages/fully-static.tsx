@@ -14,9 +14,13 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
 	};
 };
 
+export const verificationString = () => {
+	return 'This is a page with getStaticProps, at /staticpages/fully-static';
+};
+
 const Page = ({page}: Props) => (
 	<div>
-		<h1>Page {page}</h1>
+		<h1>{verificationString()}</h1>
 	</div>
 );
 

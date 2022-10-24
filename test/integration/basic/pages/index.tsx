@@ -9,7 +9,7 @@ const Home: NextPage = () => (
 		</Head>
 
 		<main>
-			<h2>Static pages</h2>
+			<h2>This is /</h2>
 		</main>
 	</>
 );
