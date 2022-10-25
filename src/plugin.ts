@@ -45,7 +45,6 @@ function updateEdgeWebpackConfig(config: Configuration) {
 	config.optimization = {
 		...config.optimization,
 		splitChunks: false,
-		minimize: false,
 	};
 
 	config.output = {
@@ -63,64 +62,62 @@ function updateEdgeWebpackConfig(config: Configuration) {
 
 class IgnextPlugin {
 	apply(compiler: Compiler) {
-		compiler.hooks.entryOption.tap(this.constructor.name, (_context, entry) => {
-			if (typeof entry !== 'object') {
-				throw new TypeError(
-					'Failed to get entry information since entry is not a static object',
-				);
-			}
+		const {entry} = compiler.options;
 
-			const imports = Object.values(entry).flatMap((c) => {
-				return c.import ?? [];
-			});
-			const pageQueries = [];
-			const functionQueries = [];
-			let middlewareQuery;
-			const pattern = /([^?]+)\?(.+)!$/;
-			for (const im of imports) {
-				const match = pattern.exec(im);
-				if (!match || !match[1] || !match[2]) {
-					throw new Error(`Invalid loader ${im} query`);
-				}
+		if (typeof entry !== 'object') {
+			throw new TypeError(
+				'Failed to get entry information since entry is not a static object',
+			);
+		}
 
-				switch (match[1]) {
-					case 'next-edge-ssr-loader': {
-						pageQueries.push(match[2]);
-						break;
-					}
-
-					case 'next-edge-function-loader': {
-						functionQueries.push(match[2]);
-						break;
-					}
-
-					case 'next-middleware-loader': {
-						middlewareQuery = match[2];
-						break;
-					}
-
-					default: {
-						throw new Error(`Unsupported Next.js loader ${match[1]}`);
-					}
-				}
-			}
-
-			entry['.ignext/handler'] = {
-				import: [
-					`ignext-server-loader?${stringify({
-						pageQueries,
-						functionQueries,
-						middlewareQuery,
-					})}!`,
-				],
-				library: {
-					type: 'module',
-				},
-				asyncChunks: false,
-				chunkLoading: false,
-			};
-
-			return undefined as unknown as boolean;
+		const imports = Object.values(entry).flatMap((c) => {
+			return c.import ?? [];
 		});
+		const pageQueries = [];
+		const functionQueries = [];
+		let middlewareQuery;
+		const pattern = /([^?]+)\?(.+)!$/;
+		for (const im of imports) {
+			const match = pattern.exec(im);
+			if (!match || !match[1] || !match[2]) {
+				throw new Error(`Invalid loader ${im} query`);
+			}
+
+			switch (match[1]) {
+				case 'next-edge-ssr-loader': {
+					pageQueries.push(match[2]);
+					break;
+				}
+
+				case 'next-edge-function-loader': {
+					functionQueries.push(match[2]);
+					break;
+				}
+
+				case 'next-middleware-loader': {
+					middlewareQuery = match[2];
+					break;
+				}
+
+				default: {
+					throw new Error(`Unsupported Next.js loader ${match[1]}`);
+				}
+			}
+		}
+
+		entry['.ignext/handler'] = {
+			import: [
+				`ignext-server-loader?${stringify({
+					pageQueries,
+					functionQueries,
+					middlewareQuery,
+				})}!`,
+			],
+			library: {
+				type: 'module',
+			},
+			asyncChunks: false,
+			chunkLoading: false,
+		};
 	}
 }

@@ -1,3 +1,6 @@
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+	enabled: process.env.ANALYZE === 'true',
+});
 const {withIgnext} = require('../../../dist/plugin.js');
 
 /** @type {import('next').NextConfig} */
@@ -8,4 +11,4 @@ const nextConfig = {
 	},
 };
 
-module.exports = withIgnext(nextConfig);
+module.exports = withBundleAnalyzer(withIgnext(nextConfig));
