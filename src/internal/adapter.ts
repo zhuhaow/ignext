@@ -24,53 +24,59 @@ interface IgnextHandlerOptions {
 }
 
 export function adapter(options: IgnextHandlerOptions) {
-	const manifestProvider = new IgnextManifestProvider(options.manifestOptions);
+	return async ({
+		request,
+		env,
+	}: EventContext<Record<string, unknown>, string, any>) => {
+		const manifestProvider = new IgnextManifestProvider(
+			options.manifestOptions,
+		);
 
-	const server = new IgnextServer({
-		manifestProvider,
-		nextConfig: options.config,
-		async loadComponent(pathname) {
-			const pageOptions = options.pagesOptions[pathname];
+		const server = new IgnextServer({
+			manifestProvider,
+			nextConfig: options.config,
+			async loadComponent(pathname) {
+				const pageOptions = options.pagesOptions[pathname];
 
-			if (!pageOptions) {
-				return undefined;
-			}
+				if (!pageOptions) {
+					return undefined;
+				}
 
-			// Some fields should be optional but marked as required in Next.js.
-			return {
-				dev: options.dev,
-				buildManifest: options.manifestOptions.buildManifest,
-				reactLoadableManifest: options.manifestOptions.reactLoadableManifest,
-				subresourceIntegrityManifest:
-					options.manifestOptions.subresourceIntegrityManifest,
-				fontLoaderManifest: options.manifestOptions.fontLoaderManifest,
-				// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-assignment
-				Document: options.Document as any,
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				App: options.appMod?.default as AppType,
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/naming-convention
-				Component: pageOptions.pageMod.default,
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				pageConfig: pageOptions.pageMod.config || {},
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				getStaticProps: pageOptions.pageMod.getStaticProps,
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				getServerSideProps: pageOptions.pageMod.getServerSideProps,
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-				getStaticPaths: pageOptions.pageMod.getStaticPaths,
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/naming-convention
-				ComponentMod: pageOptions.pageMod,
-				pathname,
-			};
-		},
-		async loadFunction(pathname: string) {
-			return options.functionOptions[pathname];
-		},
-	});
+				// Some fields should be optional but marked as required in Next.js.
+				return {
+					dev: options.dev,
+					buildManifest: options.manifestOptions.buildManifest,
+					reactLoadableManifest: options.manifestOptions.reactLoadableManifest,
+					subresourceIntegrityManifest:
+						options.manifestOptions.subresourceIntegrityManifest,
+					fontLoaderManifest: options.manifestOptions.fontLoaderManifest,
+					// eslint-disable-next-line @typescript-eslint/naming-convention, @typescript-eslint/no-unsafe-assignment
+					Document: options.Document as any,
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					App: options.appMod?.default as AppType,
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/naming-convention
+					Component: pageOptions.pageMod.default,
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					pageConfig: pageOptions.pageMod.config || {},
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					getStaticProps: pageOptions.pageMod.getStaticProps,
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					getServerSideProps: pageOptions.pageMod.getServerSideProps,
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+					getStaticPaths: pageOptions.pageMod.getStaticPaths,
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/naming-convention
+					ComponentMod: pageOptions.pageMod,
+					pathname,
+				};
+			},
+			async loadFunction(pathname: string) {
+				return options.functionOptions[pathname];
+			},
+			env,
+		});
 
-	const handler = server.getRequestHandler();
+		const handler = server.getRequestHandler();
 
-	return async ({request}: {request: Request}) => {
 		transformRequest(request, options.config);
 		const extendedRequest = new WebNextRequest(request);
 		const extendedResponse = new WebNextResponse();

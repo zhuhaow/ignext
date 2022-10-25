@@ -53,6 +53,11 @@ interface WebServerOptions {
 		pathname: string,
 	) => Promise<LoadComponentsReturnType | undefined>;
 	loadFunction: (pathname: string) => Promise<NextMiddleware | undefined>;
+	env: EventContext<
+		Record<string, unknown>,
+		string,
+		Record<string, unknown>
+	>['env'];
 }
 
 export class IgnextServer {
@@ -130,6 +135,7 @@ export class IgnextServer {
 			dynamicRoutes,
 			pageChecker,
 			options.loadFunction,
+			options.env,
 		);
 	}
 

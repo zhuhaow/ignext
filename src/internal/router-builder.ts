@@ -5,7 +5,7 @@ import {MiddlewareManifest} from 'next/dist/build/webpack/plugins/middleware-plu
 import isError, {getProperError} from 'next/dist/lib/is-error';
 import {CustomRoutes, Rewrite} from 'next/dist/lib/load-custom-routes';
 import {BaseNextRequest, BaseNextResponse} from 'next/dist/server/base-http';
-import {WebNextResponse} from 'next/dist/server/base-http/web';
+import {WebNextRequest, WebNextResponse} from 'next/dist/server/base-http/web';
 import BaseServer, {
 	MiddlewareRoutingItem,
 	NoFallbackError,
@@ -72,6 +72,11 @@ export class IgnextRouterBuilder extends RouterBuilder {
 		private readonly loadFunction: (
 			pathname: string,
 		) => Promise<NextMiddleware | undefined>,
+		private readonly env: EventContext<
+			Record<string, unknown>,
+			string,
+			Record<string, unknown>
+		>['env'],
 	) {
 		super();
 	}
@@ -180,8 +185,46 @@ export class IgnextRouterBuilder extends RouterBuilder {
 						);
 					}
 
-					// TODO: serve assets in the following method
-					// await this.serveStatic(request, response, p, parsedUrl);
+					if (!(request.method === 'GET' || request.method === 'HEAD')) {
+						response.statusCode = 405;
+						response.setHeader('Allow', ['GET', 'HEAD']);
+						return this.renderer.renderError(
+							undefined,
+							request,
+							response,
+							parameters.path,
+						);
+					}
+
+					const _response = await this.env.ASSETS.fetch(
+						(request as unknown as WebNextRequest).request,
+					);
+
+					if (!_response.ok) {
+						return {finished: false};
+					}
+
+					response.statusCode = _response.status;
+					response.statusMessage = _response.statusText;
+
+					// eslint-disable-next-line unicorn/no-array-for-each
+					_response.headers.forEach((value: string, key: string) => {
+						// The append handling is special cased for `set-cookie`
+						if (key.toLowerCase() === 'set-cookie') {
+							response.setHeader(key, value);
+						} else {
+							response.appendHeader(key, value);
+						}
+					});
+
+					if (_response.body) {
+						_response.body.pipeThrough(
+							(response as unknown as WebNextResponse).transformStream,
+						);
+					}
+
+					response.send();
+
 					return {
 						finished: true,
 					};
