@@ -47,5 +47,5 @@ After `pnpm next build`, run `pnpm ignext export`. You'll find the website ready
 
 Make sure you set Cloudflare Pages Functions compatible flag to `transformstream_enable_standard_constructor, streams_enable_constructors`.
 
-A running example of Next.js demo is available at https://ignext-demo.pages.dev
+A running example is available at https://ignext-demo.pages.dev, where a mid-size page ([template](https://tailwindui.com/components/marketing/page-examples/landing-pages#component-6b663161ec9333a3e026306b01ae45f8)) is rendered by a free Pages account.
 
