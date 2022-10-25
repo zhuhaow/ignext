@@ -8,11 +8,11 @@ ignext aims to run Next.js website on Cloudflare Pages.
 
 - [x] Serve static assets
 - [x] Serve statically generated pages
-- [ ] Serve dynamic pages
+- [x] Serve dynamic pages
 - [ ] Cache
 - [ ] Middleware
-- [ ] Basepath and locales
-- [ ] Headers, rewrites and redirects
+- [x] Basepath and locales
+- [x] Headers, rewrites and redirects
 - [ ] Images
-- [ ] Fonts
+- [x] Fonts
 - [ ] Wasm
