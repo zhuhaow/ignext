@@ -4,6 +4,8 @@ Ignite your Next.js website for Cloudflare.
 
 ignext aims to run Next.js website on Cloudflare Pages. 
 
+Read this first, [Want Next.js at the edge? Just use Vercel](https://zhuhaow.me/want-nextjs-at-edge-just-use-vercel/). I explained why ignext is not ideal and compared all solutions I can find on the market.
+
 **Currectly in alpha state. Do not use it in production.**
 
 ## Development progress
