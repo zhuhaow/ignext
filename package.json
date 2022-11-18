@@ -29,7 +29,7 @@
   "license": "MIT",
   "homepage": "https://github.com/zhuhaow/ignext",
   "devDependencies": {
-    "@cloudflare/workers-types": "^3.18.0",
+    "@cloudflare/workers-types": "^4.0.0",
     "@next/bundle-analyzer": "^12.3.1",
     "@types/fs-extra": "9.0.13",
     "@types/isomorphic-fetch": "^0.0.36",
