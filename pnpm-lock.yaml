@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@cloudflare/workers-types': ^3.18.0
+  '@cloudflare/workers-types': ^4.0.0
   '@next/bundle-analyzer': ^12.3.1
   '@types/fs-extra': 9.0.13
   '@types/isomorphic-fetch': ^0.0.36
@@ -45,7 +45,7 @@ dependencies:
   webpack: 5.74.0_esbuild@0.15.12
 
 devDependencies:
-  '@cloudflare/workers-types': 3.18.0
+  '@cloudflare/workers-types': 4.20221111.1
   '@next/bundle-analyzer': 12.3.1
   '@types/fs-extra': 9.0.13
   '@types/isomorphic-fetch': 0.0.36
@@ -387,8 +387,8 @@ packages:
       mime: 3.0.0
     dev: true
 
-  /@cloudflare/workers-types/3.18.0:
-    resolution: {integrity: sha512-ehKOJVLMeR+tZkYhWEaLYQxl0TaIZu/kE86HF3/RidR8Xv5LuQxpbh+XXAoKVqsaphWLhIgBhgnlN5HGdheXSQ==}
+  /@cloudflare/workers-types/4.20221111.1:
+    resolution: {integrity: sha512-BNV2wN8V6Zduvo7UzxcdjBbLQ906D2KhS804PDufLgx/sanGJCHVJMOIaLvS/b61JKtot1U7P/l1fjrjZ7/E3A==}
     dev: true
 
   /@cspotcode/source-map-support/0.8.1:
