@@ -32,7 +32,7 @@ specifiers:
   typescript: 4.7.4
   wait-on: ^6.0.1
   webpack: ^5.74.0
-  wrangler: 2.0.27
+  wrangler: 2.5.0
   xo: 0.51.0
 
 dependencies:
@@ -69,7 +69,7 @@ devDependencies:
   ts-node: 10.9.1_itmtyrrie7wpjnrpwbb5uqyzwa
   typescript: 4.7.4
   wait-on: 6.0.1
-  wrangler: 2.0.27
+  wrangler: 2.5.0
   xo: 0.51.0_webpack@5.74.0
 
 packages:
@@ -1344,7 +1344,7 @@ packages:
       functional-red-black-tree: 1.0.1
       ignore: 5.2.0
       regexpp: 3.2.0
-      semver: 7.3.7
+      semver: 7.3.8
       tsutils: 3.21.0_typescript@4.7.4
       typescript: 4.7.4
     transitivePeerDependencies:
@@ -1417,7 +1417,7 @@ packages:
       debug: 4.3.4
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.3.7
+      semver: 7.3.8
       tsutils: 3.21.0_typescript@4.7.4
       typescript: 4.7.4
     transitivePeerDependencies:
@@ -5443,14 +5443,6 @@ packages:
     resolution: {integrity: sha512-b39TBaTSfV6yBrapU89p5fKekE2m/NwnDocOVruQFS1/veMgdzuPcnOM34M6CwxW8jH/lxEa5rBoDeUwu5HHTw==}
     hasBin: true
 
-  /semver/7.3.7:
-    resolution: {integrity: sha512-QlYTucUYOews+WeEujDoEGziz4K6c47V/Bd+LjSSYcA94p+DmINdf7ncaUinThfvZyu13lN9OY1XDxt8C0Tw0g==}
-    engines: {node: '>=10'}
-    hasBin: true
-    dependencies:
-      lru-cache: 6.0.0
-    dev: true
-
   /semver/7.3.8:
     resolution: {integrity: sha512-NB1ctGL5rlHrPJtFDVIVzTyQylMLu9N9VICA6HSFJo8MCGVTMW6gfpicwKmmK/dAjTOrqu5l63JJOpDSrAis3A==}
     engines: {node: '>=10'}
@@ -5604,7 +5596,7 @@ packages:
     dev: true
 
   /stack-trace/0.0.10:
-    resolution: {integrity: sha1-VHxws0fo0ytOEI6hoqFZ5f3eGcA=}
+    resolution: {integrity: sha512-KGzahc7puUKkzyMt+IqAep+TVNbKP+k2Lmwhub39m1AsTSkaDutx56aDCo+HLDzf/D26BIHTJWNiTG1KAJiQCg==}
     dev: true
 
   /stack-utils/2.0.5:
@@ -6226,14 +6218,17 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /wrangler/2.0.27:
-    resolution: {integrity: sha512-dH0Nv41OiFsHu+mZFMGv1kEO6lOEoxon8kKHToG0YSpGBsObsxurkoyWJDvkAgtnrM00QF8F1Chy15zs0sjJkg==}
-    engines: {node: '>=16.7.0'}
+  /wrangler/2.5.0:
+    resolution: {integrity: sha512-7Y7Vh4yi1Vpa/o2o48VgWMv6G/3u8SPR3CJEWgntL4zPZog7iIxl0R2QjthWpsPHI7+PK6cFtnpSaSrcdEk+vw==}
+    engines: {node: '>=16.13.0'}
     hasBin: true
     dependencies:
       '@cloudflare/kv-asset-handler': 0.2.0
       '@esbuild-plugins/node-globals-polyfill': 0.1.1_esbuild@0.14.51
       '@esbuild-plugins/node-modules-polyfill': 0.1.4_esbuild@0.14.51
+      '@miniflare/core': 2.10.0
+      '@miniflare/d1': 2.10.0
+      '@miniflare/durable-objects': 2.10.0
       blake3-wasm: 2.1.5
       chokidar: 3.5.3
       esbuild: 0.14.51
